@@ -30,7 +30,7 @@ import {
   processDocumentJob,
   type StageHandler,
 } from './processor.ts';
-import { recordProgress } from './run-state.ts';
+import { recordIssue, recordProgress } from './run-state.ts';
 import { contentHash, documentStorageKey, writeObject } from './storage.ts';
 
 const THREE_PAGES = 'tests/fixtures/three-blank-pages.pdf';
@@ -234,6 +234,36 @@ describe.skipIf(!reachable)('processDocumentJob', () => {
     expect(outcome).toMatchObject({ status: 'finished', stage: 'completed' });
     const issues = await readIssues(job.runId);
     expect(issues[0]?.resolution).toBe('resolved');
+  });
+
+  it('keeps issues raised during a successful pass open', async () => {
+    const { job } = await seedRun();
+    // A stage that succeeds overall while recording a per-page problem, which is exactly
+    // what the visual route does when one page is throttled and the rest parse fine.
+    const stages: StageHandler[] = [
+      {
+        stage: 'parsing',
+        run: async (context) => {
+          await recordIssue(context.database.db, context.job.runId, {
+            stage: 'parsing',
+            failureKind: 'visual_route_throttled',
+            failureClass: 'transient',
+            message: 'physical page 7 was throttled',
+            physicalPage: 7,
+          });
+        },
+      },
+    ];
+
+    const outcome = await processDocumentJob({ database, storageDir, stages }, job);
+
+    // Resolving these would report a clean success for a document that half-processed.
+    // The stage distinction exists precisely to stop that.
+    expect(outcome).toMatchObject({ status: 'finished', stage: 'completed_with_issues' });
+
+    const issues = await readIssues(job.runId);
+    expect(issues).toHaveLength(1);
+    expect(issues[0]?.resolution).toBe('open');
   });
 
   it('does not double-count progress when a job is replayed', async () => {

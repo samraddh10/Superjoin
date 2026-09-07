@@ -17,16 +17,23 @@ import { loadConfig, loadDotEnvFile } from '@superjoin/config';
 
 loadDotEnvFile();
 import { closeDatabase, createDatabase } from '@superjoin/db';
+import { join } from 'node:path';
+
+import { documents } from '@superjoin/db';
 import {
   DOCUMENT_QUEUE,
   checkReadiness,
+  createModelClient,
   createQueueClient,
+  createVisualStage,
   ensureStorage,
+  parsingStage,
   processDocumentJob,
   startQueue,
   type DocumentJob,
   type StageHandler,
 } from '@superjoin/pipeline';
+import { eq } from 'drizzle-orm';
 
 const config = loadConfig();
 const database = createDatabase(config.databaseUrl);
@@ -46,12 +53,35 @@ function log(level: 'info' | 'error', message: string, fields: Record<string, un
 }
 
 /**
+ * The model client. Only the worker holds one, per the plan's service boundaries.
+ *
+ * Responses are recorded under the storage volume, so the saved-output mode plan 11.1
+ * asks for can replay whatever a live run produced.
+ */
+const modelClient = createModelClient(config, join(config.storageDir, 'model-cache'));
+
+/**
  * The ordered pipeline stages.
  *
- * Empty until Phase 3.1 adds parsing. Kept as an explicit, named empty list rather than
- * an implicit absence, so the gap is legible in the code that runs jobs.
+ * Parsing reads the text layer; the visual stage re-reads the pages parsing marked as
+ * structured. Extraction, normalization and comparison arrive with Phases 4 to 6 and are
+ * appended here, so what the worker does — and does not yet do — stays legible in the
+ * code that runs jobs.
  */
-const STAGES: readonly StageHandler[] = [];
+const STAGES: readonly StageHandler[] = [
+  parsingStage,
+  createVisualStage({
+    client: modelClient,
+    async documentHash(context) {
+      const [row] = await context.database.db
+        .select({ contentHash: documents.contentHash })
+        .from(documents)
+        .where(eq(documents.id, context.job.documentId))
+        .limit(1);
+      return row?.contentHash ?? '0'.repeat(64);
+    },
+  }),
+];
 
 let shuttingDown = false;
 
@@ -135,6 +165,7 @@ await boss.work<DocumentJob>(
 log('info', 'ready', {
   queue: DOCUMENT_QUEUE,
   stages: STAGES.length,
+  modelClientMode: modelClient.mode,
   storageRoot: readiness.storage.root,
   migrationsApplied: readiness.database.migrationsApplied,
   modelMode: config.modelMode,

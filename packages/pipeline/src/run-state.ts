@@ -166,13 +166,30 @@ export async function recordIssue(
   return created!.id;
 }
 
-/** Marks every still-open issue on a run as resolved. Used when a retry succeeds. */
-export async function resolveOpenIssues(db: Database, runId: string, note: string): Promise<void> {
+/**
+ * Marks issues from *earlier* attempts as resolved, once a later attempt succeeds.
+ *
+ * The cutoff is the point of this function. Resolving every open issue would also clear
+ * the ones recorded during the successful pass itself — pages that were throttled or
+ * unreadable while the rest of the document processed fine — and the run would then
+ * report `completed` rather than `completed_with_issues`. That is partial failure hidden
+ * behind a green status, which is precisely what the stage distinction exists to prevent.
+ *
+ * Issues raised during this attempt are left open, because nothing has fixed them.
+ */
+export async function resolveOpenIssues(
+  db: Database,
+  runId: string,
+  note: string,
+  attemptStartedAt: Date,
+): Promise<void> {
   await db
     .update(processingIssues)
     .set({ resolution: 'resolved', resolutionNote: note })
     .where(
-      sql`${processingIssues.runId} = ${runId} and ${processingIssues.resolution} in ('open', 'retrying')`,
+      sql`${processingIssues.runId} = ${runId}
+        and ${processingIssues.resolution} in ('open', 'retrying')
+        and ${processingIssues.createdAt} < ${attemptStartedAt}`,
     );
 }
 

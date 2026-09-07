@@ -171,6 +171,10 @@ export async function processDocumentJob(
 
   await beginRun(db, job.runId, 'parsing');
 
+  // Fixed before any stage runs, so issues raised by this attempt can be told from those
+  // left by earlier ones. Only the earlier ones may be resolved on success.
+  const attemptStartedAt = new Date();
+
   // A stored file that is gone is permanent: no retry will restore it, and the run must
   // say so rather than failing repeatedly against the same absence.
   if (!(await objectExists(options.storageDir, document.storageKey))) {
@@ -221,9 +225,15 @@ export async function processDocumentJob(
     }
   }
 
-  // Every stage that ran, succeeded. Anything recorded on an earlier attempt is no longer
-  // an open problem, so it is resolved rather than left to force completed_with_issues.
-  await resolveOpenIssues(db, job.runId, 'a later attempt completed this stage');
+  // Every stage returned. Problems left by *earlier* attempts are no longer open, so
+  // they are resolved; anything this attempt recorded stays open, because nothing fixed
+  // it and the run should say so.
+  await resolveOpenIssues(
+    db,
+    job.runId,
+    'a later attempt completed this stage',
+    attemptStartedAt,
+  );
 
   const stage = await finishRun(db, job.runId, { failed: false });
   return { runId: job.runId, status: 'finished', stage };
