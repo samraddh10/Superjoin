@@ -123,3 +123,16 @@ export {
   type TextBlock,
   type TextLine,
 } from './parsing/layout.ts';
+
+export {
+  classifyPage,
+  classifyRegion,
+  describeBlock,
+  describeRegion,
+  isLegitimatelyEmpty,
+  type ClassifyOptions,
+  type PageClassification,
+  type RegionClassification,
+  type RegionFeatures,
+  type RegionKind,
+} from './parsing/classify.ts';
