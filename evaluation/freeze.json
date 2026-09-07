@@ -1,5 +1,5 @@
 {
-  "$comment": "Plan 8.3: prompts and normalization rules are frozen before the held-out collection is processed for the first time. This file is that freeze, and evaluation/src/freeze.test.ts enforces it: change any constant below without changing this file and the suite fails. Editing a value here to make the test pass is not a fix, it is a new freeze, and it invalidates the generalization claim unless the held-out set is rerun.",
+  "$comment": "Plan 8.3: prompts and normalization rules are frozen before the held-out collection is processed for the first time. This file is that freeze, and evaluation/src/freeze.test.ts enforces it: change any constant below without changing this file and the suite fails. Editing a value here to make the test pass is not a fix, it is a new freeze, and it invalidates the generalization claim unless the held-out set is rerun. Re-frozen once: NORMALIZATION_VERSION moved to normalize@2 when generic subjects (\"document\", \"this presentation\") were scoped to their own document, after merging them across files produced a false contradiction between two filing dates. The generalization run under normalize@1 was throttled and produced no measured accuracy, so nothing measured is invalidated by this; a future generalization claim must be made under normalize@2.",
   "frozen_at": "2026-09-08",
   "frozen_at_commit": "df8fd81",
   "development_collection": "delhivery",
@@ -8,7 +8,7 @@
     "PARSER_VERSION": "native-text@1",
     "TRANSCRIPTION_PROMPT_VERSION": "table-transcribe@1",
     "EXTRACTION_PROMPT_VERSION": "claim-extract@1",
-    "NORMALIZATION_VERSION": "normalize@1",
+    "NORMALIZATION_VERSION": "normalize@2",
     "ENTITY_MATCH_PROMPT_VERSION": "entity-match@1",
     "CHECKS_VERSION": "checks@1",
     "RELATIONSHIP_PROMPT_VERSION": "relationship-classify@1",

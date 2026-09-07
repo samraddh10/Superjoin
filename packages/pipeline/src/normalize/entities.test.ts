@@ -13,7 +13,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { closeDatabase, collections, createDatabase, type DatabaseHandle } from '@superjoin/db';
 
 import { ModelError, type CompletionProvider, type CompletionResult } from '../model/index.ts';
-import { normalizeEntityLabel, resolveEntity } from './entities.ts';
+import { isGenericSubject, normalizeEntityLabel, resolveEntity } from './entities.ts';
 import { factGroupId } from './stage.ts';
 
 const connectionString =
@@ -264,5 +264,83 @@ describe.skipIf(!reachable)('a failing adjudicator', () => {
     expect(resolution.adjudications).toBe(1);
     expect(resolution.adjudicationFailed).toBe(false);
     expect(resolution.method).toBe('created');
+  });
+});
+
+/**
+ * Subjects that name no particular thing.
+ *
+ * This is the regression for the system's first false contradiction. Extraction returned
+ * `subject: "document"` for both a prospectus filing date and an earnings-deck date;
+ * entity resolution merged them, so the deterministic checks reported `entityMatch: same`
+ * and the classifier saw one entity holding two different dates. It called that a
+ * contradiction, which was a reasonable reading of what it was given and completely wrong.
+ *
+ * A false contradiction is the expensive error for this system, so the guard is a rule
+ * rather than a request in a prompt.
+ */
+describe('generic subjects', () => {
+  it('recognises document self-references, whatever the casing or padding', () => {
+    for (const subject of ['document', 'This Presentation', '  the company ', 'The Report.']) {
+      expect(isGenericSubject(subject), subject).toBe(true);
+    }
+  });
+
+  it('leaves real names alone', () => {
+    for (const subject of ['Delhivery Limited', 'Sahil Barua', 'Express Parcel', 'India']) {
+      expect(isGenericSubject(subject), subject).toBe(false);
+    }
+  });
+});
+
+describe.skipIf(!reachable)('scoping a generic subject', () => {
+  it('keeps two documents saying "document" apart', async () => {
+    const { collectionId } = await seedCollection();
+
+    const first = await resolveEntity(database.db, {
+      collectionId,
+      subject: 'document',
+      scopeKey: 'doc-one',
+    });
+    const second = await resolveEntity(database.db, {
+      collectionId,
+      subject: 'document',
+      scopeKey: 'doc-two',
+    });
+
+    // Different entities, so the comparison stage sees entityMatch "different" rather than
+    // "same" and never puts the two filing dates to the classifier as one thing.
+    expect(second.entityId).not.toBe(first.entityId);
+    // The reviewer still sees the word the document used, not the scoping key.
+    expect(second.canonicalLabel).toBe('document');
+  });
+
+  it('still merges the same generic subject within one document', async () => {
+    const { collectionId } = await seedCollection();
+
+    const first = await resolveEntity(database.db, {
+      collectionId,
+      subject: 'this presentation',
+      scopeKey: 'doc-one',
+    });
+    const again = await resolveEntity(database.db, {
+      collectionId,
+      subject: 'this presentation',
+      scopeKey: 'doc-one',
+    });
+
+    expect(again.entityId).toBe(first.entityId);
+    expect(again.method).toBe('exact');
+  });
+
+  it('does not scope a real name', async () => {
+    const { collectionId } = await seedCollection();
+
+    const first = await resolveEntity(database.db, { collectionId, subject: 'Delhivery Limited' });
+    // No scope key, because the subject is a real entity: this is the merge that must
+    // still happen across documents for corroboration to be possible at all.
+    const second = await resolveEntity(database.db, { collectionId, subject: 'Delhivery' });
+
+    expect(second.entityId).toBe(first.entityId);
   });
 });

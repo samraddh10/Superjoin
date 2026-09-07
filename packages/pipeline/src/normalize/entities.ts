@@ -123,6 +123,47 @@ export interface EntityCandidate {
   readonly normalizedLabel: string;
 }
 
+/**
+ * Subjects that name no particular thing.
+ *
+ * Extraction sometimes returns the document's own self-reference as the subject — "this
+ * presentation", "the company", "document". Those are not entities: "document" in the
+ * prospectus and "document" in the earnings deck are different documents, and merging
+ * them produced the system's first false contradiction, two filing dates read as one
+ * thing holding two values.
+ *
+ * They are not dropped, because the claim is often still real. They are scoped to their
+ * document instead, so a placeholder can never be the reason two files are compared.
+ */
+const GENERIC_SUBJECTS = new Set([
+  'document',
+  'documents',
+  'this document',
+  'presentation',
+  'this presentation',
+  'the presentation',
+  'report',
+  'this report',
+  'the report',
+  'company',
+  'the company',
+  'issuer',
+  'the issuer',
+  'it',
+  'they',
+  'we',
+  'us',
+  'our company',
+  'the group',
+  'group',
+]);
+
+/** Whether a subject names no particular entity and must not merge across documents. */
+export function isGenericSubject(subject: string): boolean {
+  const folded = subject.trim().toLowerCase().replace(/\s+/g, ' ').replace(/[.,]$/, '');
+  return folded === '' || GENERIC_SUBJECTS.has(folded);
+}
+
 export interface ResolveEntityOptions {
   readonly collectionId: string;
   /** The subject exactly as the document named it. */
@@ -152,6 +193,13 @@ export interface ResolveEntityOptions {
    * likely to be the same entity.
    */
   readonly maxAdjudications?: number;
+  /**
+   * Confines matching to one scope, used for subjects that name no particular thing.
+   *
+   * Mixed into the stored normalized label only, so the canonical label a reviewer sees
+   * stays the words the document used while the identity stays local to it.
+   */
+  readonly scopeKey?: string;
 }
 
 /**
@@ -166,7 +214,8 @@ export async function resolveEntity(
   options: ResolveEntityOptions,
 ): Promise<EntityResolution> {
   const { normalized, strippedSuffixes } = normalizeEntityLabel(options.subject);
-  const label = normalized === '' ? options.subject.trim().toLowerCase() : normalized;
+  const base = normalized === '' ? options.subject.trim().toLowerCase() : normalized;
+  const label = options.scopeKey === undefined ? base : `${base}#${options.scopeKey}`;
 
   const [exact] = await db
     .select({ id: entities.id, canonicalLabel: entities.canonicalLabel })
