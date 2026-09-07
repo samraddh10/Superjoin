@@ -51,3 +51,20 @@ export {
   type ValidationLimits,
   type ValidationResult,
 } from './validation.ts';
+
+export {
+  DOCUMENT_QUEUE,
+  DEFAULT_QUEUE_POLICY,
+  createQueueClient,
+  enqueueDocumentJob,
+  startQueue,
+  type DocumentJob,
+  type QueuePolicy,
+} from './queue.ts';
+
+export {
+  ingestDocument,
+  type IngestionContext,
+  type IngestionOutcome,
+  type IngestionRequest,
+} from './ingestion.ts';
