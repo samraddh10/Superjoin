@@ -68,3 +68,28 @@ export {
   type IngestionOutcome,
   type IngestionRequest,
 } from './ingestion.ts';
+
+export {
+  abandonIssue,
+  beginRun,
+  enterStage,
+  finishRun,
+  heartbeat,
+  recordIssue,
+  recordProgress,
+  resolveOpenIssues,
+  type FailureClass,
+  type FailureRecord,
+  type ProgressUpdate,
+  type RunStage,
+} from './run-state.ts';
+
+export {
+  ProcessingError,
+  classifyFailure,
+  processDocumentJob,
+  type ProcessingContext,
+  type ProcessingOutcome,
+  type ProcessorOptions,
+  type StageHandler,
+} from './processor.ts';
