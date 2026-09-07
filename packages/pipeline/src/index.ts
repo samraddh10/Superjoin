@@ -136,3 +136,47 @@ export {
   type RegionFeatures,
   type RegionKind,
 } from './parsing/classify.ts';
+
+export { isPng, renderPage, type RenderOptions, type RenderedPage } from './parsing/render.ts';
+
+export {
+  readPrintedPageLabel,
+  type PageLabelOptions,
+  type PrintedPageLabel,
+} from './parsing/page-label.ts';
+
+export {
+  PARSER_VERSION,
+  classifyBlockType,
+  persistPageBlocks,
+  type BlockType,
+  type PersistedPage,
+} from './parsing/persist.ts';
+
+export {
+  chunkSourceBlocks,
+  estimateTokens,
+  type Chunk,
+  type ChunkOptions,
+  type ChunkSourceBlock,
+} from './parsing/chunk.ts';
+
+export { parseDocument, parsingStage, type ParseSummary } from './parsing/stage.ts';
+
+export {
+  TRANSCRIPTION_PROMPT_VERSION,
+  pagesNeedingTranscription,
+  persistTranscription,
+  renderTranscription,
+  transcribePage,
+  type Transcription,
+  type TranscribeOptions,
+  type TranscriptionResult,
+} from './parsing/transcribe.ts';
+
+export {
+  createVisualStage,
+  transcribeDocument,
+  type VisualStageOptions,
+  type VisualSummary,
+} from './parsing/visual-stage.ts';
