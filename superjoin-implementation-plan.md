@@ -347,42 +347,6 @@ Optional Node.js alternatives:
 
 Each extension should address an observed limitation. A graph view and chat are optional presentation features; neither replaces the core comparison workflow.
 
-## Phase 10: optional cloud deployment
-
-### 10.1 Choose the deployment shape
-
-For the assignment, Docker Compose is sufficient. If a hosted demo is valuable, the following GCP-based mapping is a concrete option. This is not a claim that it is the cheapest host.
-
-| Part | Service | Specific use |
-|---|---|---|
-| React frontend | Cloudflare Pages | Publish Vite's static build |
-| Fastify | Cloud Run service | HTTP uploads, status and result retrieval |
-| Node.js processing | Cloud Run Job | Run a finite processing invocation with a run/document ID, then exit |
-| PostgreSQL | Cloud SQL for PostgreSQL with pgvector | Managed application data and durable run state |
-| PDF files | Google Cloud Storage | Original PDFs and parsing artifacts |
-| Container images | Artifact Registry | Versioned API/worker image tags |
-| Secrets | Secret Manager | OpenRouter key and database configuration |
-| Logs | Cloud Logging | Structured logs with document and processing-run IDs |
-
-Official service references: [Cloudflare Vite deployment](https://developers.cloudflare.com/pages/framework-guides/deploy-a-vite3-project/), [Cloud Run execution models](https://docs.cloud.google.com/run/docs/overview/what-is-cloud-run), [Cloud Run Jobs](https://docs.cloud.google.com/run/docs/create-jobs), [Cloud Storage](https://docs.cloud.google.com/storage/docs/introduction), [Cloud SQL extensions](https://docs.cloud.google.com/sql/docs/postgres/extensions).
-
-### 10.2 Adapt worker dispatch explicitly
-
-The local pg-boss worker is long-lived. The proposed Cloud Run Job is a finite invocation and should call the shared pipeline with a processing-run ID directly. It replaces local queue dispatch for this deployment path; do not simply deploy a polling worker as an ordinary request-driven service and expect database jobs to wake it.
-
-Write a durable pending run before requesting a job execution. Store the execution reference, make the pipeline idempotent, and reconcile or retry pending runs when dispatch fails. Do not use both dispatch paths for the same run. Keep a small dispatcher interface: local pg-boss implementation and optional Cloud Run Jobs implementation.
-
-### 10.3 Validate hosted behavior
-
-- Store files in Cloud Storage, not container-local storage.
-- Keep service credentials server-side and restrict access to uploaded files.
-- Confirm database connections, extension support, memory and processing timeouts.
-- Put API/worker/database in compatible nearby regions.
-- For a public writable demo, add a simple access gate and upload/LLM usage limits. A full account system is optional.
-- Check current service pricing before enabling the deployment; no cloud cost or free-tier assumption is required for the local submission.
-
-**Exit condition:** a new hosted upload finishes, its evidence remains accessible after container restart, and dispatch failures have a visible recovery path.
-
 ## Phase 11: package and submit
 
 ### 11.1 Prepare the repository
