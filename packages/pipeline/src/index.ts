@@ -42,3 +42,12 @@ export {
   type DependencyStatus,
   type Readiness,
 } from './readiness.ts';
+
+export {
+  classifyOpenError,
+  limitsFromConfig,
+  validateUpload,
+  type RejectionReason,
+  type ValidationLimits,
+  type ValidationResult,
+} from './validation.ts';

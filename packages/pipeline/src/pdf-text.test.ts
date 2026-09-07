@@ -51,6 +51,20 @@ describe('positional extraction of doc-02 physical page 5', () => {
     page = await extractPageText(new Uint8Array(await readFile(ANNUAL_REPORT)), CHART_PAGE);
   });
 
+  it('can extract twice from one buffer', async () => {
+    // Same detachment hazard as validation: PDF.js neuters the array it is given, so
+    // without a defensive copy the second call sees zero bytes and reports the document
+    // as unreadable rather than returning page 20.
+    const bytes = new Uint8Array(await readFile(ANNUAL_REPORT));
+
+    const first = await extractPageText(bytes, CHART_PAGE);
+    const second = await extractPageText(bytes, 20);
+
+    expect(first.items.length).toBeGreaterThan(0);
+    expect(second.physicalPage).toBe(20);
+    expect(second.items.length).toBeGreaterThan(0);
+  });
+
   it('reports the two-up sheet geometry the annual report is laid out on', () => {
     // A4 landscape. Each physical page holds two printed pages side by side, which is
     // why a page is not a semantic unit for chunking.

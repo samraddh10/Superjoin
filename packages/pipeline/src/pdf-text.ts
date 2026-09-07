@@ -95,9 +95,17 @@ function toPositioned(items: readonly unknown[]): PositionedText[] {
   return positioned;
 }
 
+/**
+ * Opens a document from a copy of the caller's bytes.
+ *
+ * PDF.js takes ownership of the buffer it is handed and detaches it, so passing the
+ * original would leave the caller holding an empty Uint8Array. That failure is silent:
+ * a second extractPageText call on the same buffer sees zero bytes and reports a
+ * malformed PDF rather than the page it was asked for.
+ */
 async function openDocument(bytes: Uint8Array) {
   try {
-    return await getDocumentProxy(bytes);
+    return await getDocumentProxy(new Uint8Array(bytes));
   } catch (cause) {
     throw new PdfExtractionError(`could not open PDF: ${(cause as Error).message}`, { cause });
   }
