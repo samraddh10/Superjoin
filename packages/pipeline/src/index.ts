@@ -22,3 +22,23 @@ export {
   type Binding,
   type Positioned,
 } from './axis-binding.ts';
+
+export {
+  checkStorageHealth,
+  contentHash,
+  documentStorageKey,
+  ensureStorage,
+  objectExists,
+  pageImageStorageKey,
+  readObject,
+  resolvePath,
+  writeObject,
+  StorageError,
+  type StorageHealth,
+} from './storage.ts';
+
+export {
+  checkReadiness,
+  type DependencyStatus,
+  type Readiness,
+} from './readiness.ts';

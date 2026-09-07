@@ -1,11 +1,10 @@
-# Local execution for the four services the plan names: web, api, worker and postgres.
+# Local execution for the services the plan names: api, worker, postgres and, later, web.
 #
-# Only postgres is defined so far. The api, worker and web services are added in the
-# phases that give them entry points; declaring images that cannot build would make
-# `docker compose up` fail rather than start the database the next phase needs.
+# web is added in Phase 7, when it has something to render. pg-boss creates and owns its
+# own schema in this same database, so no separate queue service is needed.
 #
-# pg-boss creates and owns its own schema in this same database, so no separate queue
-# service is needed.
+# The api and worker share one database and one PDF volume, which is what plan section
+# 1.3's exit condition requires them to demonstrate.
 
 services:
   postgres:
@@ -36,6 +35,58 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  # Applies migrations once, then exits. api and worker wait for it to succeed, so
+  # neither can start against a schema that does not exist yet.
+  migrate:
+    build:
+      context: .
+      target: migrate
+    environment:
+      DATABASE_URL: postgres://superjoin:superjoin@postgres:5432/superjoin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  api:
+    build:
+      context: .
+      target: api
+    environment:
+      # Container-to-container, so the internal port and the service name, not 55432.
+      DATABASE_URL: postgres://superjoin:superjoin@postgres:5432/superjoin
+      STORAGE_DIR: /data/storage
+      PORT: 3000
+      # Deliberately unset: the API never holds the model key. Only the worker calls
+      # Gemini, per the plan's service boundaries.
+    ports:
+      - '3000:3000'
+    volumes:
+      - pdf-storage:/data/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    build:
+      context: .
+      target: worker
+    environment:
+      DATABASE_URL: postgres://superjoin:superjoin@postgres:5432/superjoin
+      STORAGE_DIR: /data/storage
+      # The only service given model access. Absent means saved-output mode.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    volumes:
+      # The same volume the api mounts, at the same path.
+      - pdf-storage:/data/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   postgres-data:

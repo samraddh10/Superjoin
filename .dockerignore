@@ -1,0 +1,22 @@
+# Build context hygiene. The datasets are the largest thing in the repo and no container
+# needs them: they are evaluation inputs, read by tests on the host.
+node_modules
+**/node_modules
+**/dist
+# Recursive, deliberately. A bare *.tsbuildinfo matches only the repository root, so the
+# per-package files were copied into the image; tsc -b then read them, concluded the
+# build was current, and emitted nothing. The result was an image with no dist/ and no
+# error to explain it.
+**/*.tsbuildinfo
+.git
+.github
+.env
+.env.*
+storage
+datasets
+evaluation
+sample-output
+docs
+*.md
+.claude
+.code-review-graph

@@ -16,6 +16,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
+    "@superjoin/db": "0.1.0",
     "decimal.js": "10.6.0",
     "unpdf": "1.8.1"
   }

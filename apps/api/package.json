@@ -1,0 +1,18 @@
+{
+  "name": "@superjoin/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsx watch --conditions development src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@superjoin/config": "0.1.0",
+    "@superjoin/db": "0.1.0",
+    "@superjoin/pipeline": "0.1.0",
+    "fastify": "5.12.3"
+  }
+}
