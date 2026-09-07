@@ -285,6 +285,19 @@ tbody tr[aria-selected='true'] {
   max-width: 420px;
 }
 
+/*
+ * The value column.
+ *
+ * Tabular numerals so figures line up, but wrapping allowed: an open predicate set means
+ * a "value" is as often a registered office address or a list of exchanges as it is a
+ * number, and nowrap turned one such claim into a table several screens wide.
+ */
+.value-cell {
+  font-variant-numeric: tabular-nums;
+  max-width: 340px;
+  overflow-wrap: anywhere;
+}
+
 /* ---------- badges ---------- */
 
 .badge {

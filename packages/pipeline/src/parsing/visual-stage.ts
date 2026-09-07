@@ -24,7 +24,7 @@ import type { Database } from '@superjoin/db';
 import { ModelError, type CompletionProvider } from '../model/index.ts';
 import { extractPageText } from '../pdf-text.ts';
 import type { ProcessingContext, StageHandler } from '../processor.ts';
-import { recordIssue } from '../run-state.ts';
+import { heartbeat, recordIssue } from '../run-state.ts';
 import { readObject } from '../storage.ts';
 import { toLayoutText, buildLayout } from './layout.ts';
 import {
@@ -93,6 +93,11 @@ export async function transcribeDocument(
   let stoppedEarly = false;
 
   for (const physicalPage of selected) {
+    // One model call per page and no counter to report, so the run's heartbeat would
+    // otherwise go untouched for the whole visual route and a working document would be
+    // reported as stalled. See the same note in the normalization stage.
+    await heartbeat(db, context.job.runId);
+
     if (consecutive >= maxConsecutive) {
       stoppedEarly = true;
       await recordIssue(db, context.job.runId, {

@@ -183,7 +183,7 @@ export function FactsView({ collectionId, focusFactId, onShowRelationships }: Fa
                     ) : null}
                   </td>
                   <td className="mono">{fact.predicate}</td>
-                  <td className="num">{formatValue(fact)}</td>
+                  <td className="value-cell">{formatValue(fact)}</td>
                   <td>
                     <ContextLine fact={fact} />
                   </td>

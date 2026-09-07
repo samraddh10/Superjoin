@@ -30,7 +30,7 @@ import {
   processDocumentJob,
   type StageHandler,
 } from './processor.ts';
-import { recordIssue, recordProgress } from './run-state.ts';
+import { heartbeat, recordIssue, recordProgress } from './run-state.ts';
 import { contentHash, documentStorageKey, writeObject } from './storage.ts';
 
 const THREE_PAGES = 'tests/fixtures/three-blank-pages.pdf';
@@ -419,5 +419,42 @@ describe.skipIf(!reachable)('an issue that recurs on a later attempt', () => {
       .where(eq(processingIssues.runId, job.runId));
     expect(issues[0]!.resolution).toBe('resolved');
     expect((await readRun(job.runId)).stage).toBe('completed');
+  });
+});
+
+/**
+ * A long stage must keep saying it is alive.
+ *
+ * `heartbeat_at` is the only thing distinguishing a stalled run from a working one, which
+ * plan 2.3 requires to be distinguishable. Most stages refresh it as a side effect of
+ * `recordProgress`, but normalization and the visual route have no per-item counter to
+ * report and so refreshed nothing: on a document with hundreds of claims the interface
+ * showed a healthy run as "stalled in normalizing", with a Retry button beside it that
+ * would have restarted work that was progressing fine.
+ */
+describe.skipIf(!reachable)('a long-running stage', () => {
+  it('refreshes the heartbeat while it works', async () => {
+    const { job } = await seedRun();
+    const { db } = database;
+
+    const before = await readRun(job.runId);
+
+    const slowStage: StageHandler = {
+      stage: 'normalizing',
+      async run(context) {
+        // Far enough past enterStage's write that a stage touching nothing would leave a
+        // measurably stale timestamp.
+        await new Promise((resolve) => setTimeout(resolve, 1100));
+        await heartbeat(db, context.job.runId);
+      },
+    };
+
+    await processDocumentJob({ database, storageDir, stages: [slowStage] }, job);
+
+    const after = await readRun(job.runId);
+    expect(after.heartbeatAt).not.toBeNull();
+    expect(after.heartbeatAt!.getTime()).toBeGreaterThan(
+      before.heartbeatAt?.getTime() ?? 0,
+    );
   });
 });
