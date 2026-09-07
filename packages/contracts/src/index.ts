@@ -149,3 +149,12 @@ export const errorResponseSchema = z.object({
   message: z.string(),
 });
 export type ErrorResponse = z.infer<typeof errorResponseSchema>;
+
+/**
+ * The review interface's read side, from plan section 7.1.
+ *
+ * Re-exported rather than defined here: these shapes reference the run and issue schemas
+ * above, and keeping them in their own module stops this file from becoming the place
+ * where every wire type lands regardless of what it is for.
+ */
+export * from './review.ts';
