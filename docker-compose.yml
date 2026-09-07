@@ -1,0 +1,38 @@
+# Local execution for the four services the plan names: web, api, worker and postgres.
+#
+# Only postgres is defined so far. The api, worker and web services are added in the
+# phases that give them entry points; declaring images that cannot build would make
+# `docker compose up` fail rather than start the database the next phase needs.
+#
+# pg-boss creates and owns its own schema in this same database, so no separate queue
+# service is needed.
+
+services:
+  postgres:
+    # pgvector is required by plan section 6.1 for candidate retrieval. Taking the
+    # extension as part of the image avoids a build step in the migration path.
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: superjoin
+      POSTGRES_PASSWORD: superjoin
+      POSTGRES_DB: superjoin
+    ports:
+      # Exposed so migrations and tests can run on the host against the same database
+      # the containers use.
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # Services that depend on postgres must wait for readiness, not just for the
+      # container to exist; the server restarts once during first-run initialisation.
+      test: ['CMD-SHELL', 'pg_isready -U superjoin -d superjoin']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres-data:
+  # Original PDFs and derived parsing artifacts, shared by the api and worker services
+  # once they exist. Named here so the volume's lifecycle is visible from the start.
+  pdf-storage:
