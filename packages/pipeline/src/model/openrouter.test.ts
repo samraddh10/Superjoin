@@ -69,16 +69,35 @@ describe('a successful completion', () => {
     expect(result.servedByModel).toBe('google/gemma-4-31b-it:free');
   });
 
-  it('sends the model, a zero temperature and a fixed seed', async () => {
+  it('sends the model and a zero temperature, and no seed unless asked', async () => {
     fetchMock.mockResolvedValue(jsonResponse(okBody('{}')));
 
     await new OpenRouterClient(OPTIONS).complete({ messages: [{ role: 'user', content: 'x' }] });
 
     const body = JSON.parse(fetchMock.mock.calls[0]![1].body as string);
     expect(body.model).toBe('google/gemma-4-31b-it:free');
-    // Extraction should be as reproducible as a hosted model allows.
+    // Extraction should be as reproducible as a hosted model allows, and temperature is
+    // what actually pins it.
     expect(body.temperature).toBe(0);
-    expect(body.seed).toBe(7);
+
+    // No seed. "OpenAI-compatible" is a family of dialects, and the strict members reject
+    // fields they do not implement: Google's compatibility endpoint answers a request
+    // carrying `seed` with 400 `Unknown name "seed"`, failing every call. Sending a
+    // parameter no caller asked for is what made that a total outage rather than a
+    // missing nicety.
+    expect(body).not.toHaveProperty('seed');
+  });
+
+  it('sends a seed when the caller supplies one', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(okBody('{}')));
+
+    await new OpenRouterClient(OPTIONS).complete({
+      messages: [{ role: 'user', content: 'x' }],
+      seed: 42,
+    });
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1].body as string);
+    expect(body.seed).toBe(42);
   });
 
   it('sends a JSON schema as response_format when one is given', async () => {

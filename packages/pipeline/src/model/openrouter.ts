@@ -176,8 +176,23 @@ export class OpenRouterClient {
       messages: request.messages,
       max_tokens: request.maxTokens ?? 4096,
       temperature: request.temperature ?? 0,
-      seed: request.seed ?? 7,
     };
+
+    /**
+     * Sent only when the caller asked for one.
+     *
+     * "OpenAI-compatible" is a family of dialects rather than one protocol, and the
+     * strict members reject fields they do not implement outright: Google's compatibility
+     * endpoint answers a request carrying `seed` with `400 Unknown name "seed": Cannot
+     * find field`, which fails every call rather than degrading. Defaulting the field on
+     * meant sending a parameter nobody had asked for, and paying for it at every
+     * provider that had not implemented it.
+     *
+     * Little is lost. `temperature: 0` is what actually pins the output, and exact replay
+     * comes from the recorded-response cache rather than from the provider agreeing to
+     * honour a seed — which the plan already notes a free endpoint may quietly ignore.
+     */
+    if (request.seed !== undefined) body['seed'] = request.seed;
 
     if (request.schema !== undefined) {
       body['response_format'] = {

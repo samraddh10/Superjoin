@@ -90,6 +90,13 @@ services:
       STORAGE_DIR: /data/storage
       # The only service given model access. Absent means saved-output mode.
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      # Passed through so the model stays a configuration value rather than a rebuild.
+      # The endpoint is OpenAI-compatible, so this can point at OpenRouter or straight at
+      # a provider that speaks the same protocol; the defaults match packages/config.
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      LLM_MODEL: ${LLM_MODEL:-google/gemma-4-26b-a4b-it:free}
+      LLM_CONCURRENCY: ${LLM_CONCURRENCY:-2}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-Xenova/all-mpnet-base-v2}
     volumes:
       # The same volume the api mounts, at the same path.
       - pdf-storage:/data/storage
