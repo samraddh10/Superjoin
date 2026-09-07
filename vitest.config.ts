@@ -8,7 +8,12 @@ export default defineConfig({
     conditions: ['development'],
   },
   test: {
-    include: ['{apps,packages}/*/src/**/*.test.ts', 'tests/**/*.test.ts'],
+    include: [
+      '{apps,packages}/*/src/**/*.test.ts',
+      // The evaluation workspace sits beside apps and packages rather than inside them.
+      'evaluation/src/**/*.test.ts',
+      'tests/**/*.test.ts',
+    ],
     // Extraction tests open real PDFs from datasets/, so paths resolve from the root.
     root: import.meta.dirname,
   },

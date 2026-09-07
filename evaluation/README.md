@@ -56,3 +56,55 @@ Measures: claim-grounding precision, evidence-reference validity, candidate reca
 Does not measure: extraction recall across the full collection. 50 claims out of three documents is a sample. Coverage is reported separately in Phase 8, and the sample size is stated wherever a number derived from this set is quoted.
 
 Development versus held-out: this entire set is **development data**. It was read before the system was built and will inform tuning. The Phase 8.5 generalization result on the India macroeconomy collection is the held-out measurement, and prompts and normalization rules are frozen before that collection is processed for the first time.
+
+## Running the scorer
+
+```bash
+npx tsx --conditions development evaluation/src/run.ts "<collection name or id>" \
+  --out evaluation/results/<name>.md
+```
+
+`npm run evaluate -- "<collection>"` works too, but npm consumes `--out` as one of its own
+flags before the script sees it, so pass a custom output path only via the direct form.
+
+The scorer is read-only against the database and reads the same tables the interface does.
+An evaluation that could change what it measures would not be one, and a separate export
+would be a second description of what the pipeline produced that could disagree with the
+first.
+
+## How a produced claim is matched to a gold claim
+
+Every figure in the report rests on this rule, so it is stated rather than left implicit
+in a similarity score. A produced claim matches when all four hold:
+
+1. same document, joined on the file's basename;
+2. the gold physical page is among the pages the claim's evidence lands on;
+3. the predicates are the same measure, by `predicateRelation`, which returns `same` only
+   for identical names after folding;
+4. the figures are equal in base units exactly, or neither side states a figure — and
+   where neither does, the subjects must agree, since one page lists several directors
+   under one predicate and nothing numeric separates them.
+
+Three choices are deliberate and worth arguing with:
+
+- **Period and scope are not match conditions.** They are what the pairs turn on. Folding
+  them into identity would let a claim about FY2024 satisfy a gold claim about Q4 FY24 and
+  be scored as correct. They are reported instead as context agreement on claims that
+  already matched, so a right value under a wrong period is visible as exactly that.
+- **Exact value equality, not a tolerance.** The pipeline's rounding-interval logic decides
+  whether two *sources* agree; borrowing it here would let the system's own notion of
+  closeness grade its extraction. Gold values are at source precision, so the produced
+  value should reach the same figure.
+- **`predicateHead` is not used.** Its own documentation says it exists to widen retrieval
+  and decides nothing. It collapses `ebitda` into `adjusted_ebitda`, and the earnings deck
+  reports both.
+
+Evidence-reference validity is re-checked here rather than read back from the stored
+verification flag. A scorer that trusted that field would be reporting the pipeline's
+opinion of itself.
+
+## What the report will not do
+
+It prints `not measured` rather than `0%` wherever a denominator is empty. A zero is a
+result and an absence is not, and a report that showed the second as the first would be
+worse than no report.

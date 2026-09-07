@@ -9,15 +9,17 @@
   },
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "evaluation"
   ],
   "scripts": {
-    "build": "tsc -b && npm run build --workspace @superjoin/web",
+    "build": "tsc -b && tsc -b evaluation && npm run build --workspace @superjoin/web",
     "clean": "tsc -b --clean",
-    "typecheck": "tsc -b && npm run typecheck --workspace @superjoin/web",
+    "typecheck": "tsc -b && tsc -b evaluation && npm run typecheck --workspace @superjoin/web",
     "test": "vitest run",
     "test:watch": "vitest",
-    "dev:web": "npm run dev --workspace @superjoin/web"
+    "dev:web": "npm run dev --workspace @superjoin/web",
+    "evaluate": "npm run evaluate --workspace @superjoin/evaluation"
   },
   "devDependencies": {
     "@types/node": "24.13.3",

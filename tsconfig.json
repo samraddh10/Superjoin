@@ -1,11 +1,23 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/contracts" },
-    { "path": "./packages/config" },
-    { "path": "./packages/db" },
-    { "path": "./packages/pipeline" },
-    { "path": "./apps/api" },
-    { "path": "./apps/worker" }
+    {
+      "path": "./packages/contracts"
+    },
+    {
+      "path": "./packages/config"
+    },
+    {
+      "path": "./packages/db"
+    },
+    {
+      "path": "./packages/pipeline"
+    },
+    {
+      "path": "./apps/api"
+    },
+    {
+      "path": "./apps/worker"
+    }
   ]
 }

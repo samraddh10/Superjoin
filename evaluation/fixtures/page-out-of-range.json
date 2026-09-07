@@ -1,0 +1,70 @@
+{
+  "version": "0.1",
+  "created": "2026-09-07",
+  "collection": "delhivery",
+  "method": "Fixture for the evaluation loader tests. Not a measurement set.",
+  "conventions": {
+    "physical_page": "Zero-based physical PDF page index. This is the identifier the pipeline uses.",
+    "printed_page_label": "Label printed on the page, where one exists. Null where unreliable.",
+    "numeric_value": "Decimal string. Never a JSON number, to avoid float drift.",
+    "scale": "Multiplier word as printed: crore, million, thousand, or null.",
+    "sign": "Losses and negative figures are recorded negative, even where the source prints parentheses."
+  },
+  "documents": [
+    {
+      "id": "doc-01-prospectus",
+      "file": "datasets/delhivery/01-delhivery-prospectus-2022-excerpt.pdf",
+      "pages": 100,
+      "published": "2022-05"
+    },
+    {
+      "id": "doc-02-annual-report",
+      "file": "datasets/delhivery/02-delhivery-annual-report-fy24-excerpt.pdf",
+      "pages": 100,
+      "published": "2024-08"
+    },
+    {
+      "id": "doc-03-earnings-deck",
+      "file": "datasets/delhivery/03-delhivery-q4-fy24-earnings-presentation.pdf",
+      "pages": 27,
+      "published": "2024-05-17"
+    }
+  ],
+  "claims": [
+    {
+      "id": "C01",
+      "document": "doc-03-earnings-deck",
+      "physical_page": 32,
+      "printed_page_label": "5",
+      "subject": "Delhivery Limited",
+      "predicate": "revenue_from_services",
+      "numeric_value": "8142",
+      "currency": "INR",
+      "scale": "crore",
+      "period_label": "FY2024",
+      "period_type": "fiscal_year",
+      "scope": "consolidated",
+      "assertion_status": "reported",
+      "evidence_kind": "narrative",
+      "quote": "₹8,142 Cr FY24 revenue from services"
+    },
+    {
+      "id": "C02",
+      "document": "doc-03-earnings-deck",
+      "physical_page": 5,
+      "printed_page_label": "5",
+      "subject": "Delhivery Limited",
+      "predicate": "ebitda",
+      "numeric_value": "127",
+      "currency": "INR",
+      "scale": "crore",
+      "period_label": "FY2024",
+      "period_type": "fiscal_year",
+      "scope": "consolidated",
+      "assertion_status": "reported",
+      "evidence_kind": "narrative",
+      "quote": "₹127Cr / 1.6% EBITDA / EBITDA margin"
+    }
+  ],
+  "pairs": []
+}

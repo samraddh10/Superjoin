@@ -1,0 +1,17 @@
+{
+  "name": "@superjoin/evaluation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "evaluate": "tsx --conditions development src/run.ts"
+  },
+  "dependencies": {
+    "@superjoin/config": "0.1.0",
+    "@superjoin/db": "0.1.0",
+    "@superjoin/pipeline": "0.1.0",
+    "decimal.js": "10.6.0",
+    "zod": "4.5.4"
+  }
+}

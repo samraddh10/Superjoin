@@ -315,6 +315,28 @@ export async function extractDocument(
     claimsAccepted: accepted,
   });
 
+  /**
+   * A stage that attempted nothing must say so.
+   *
+   * Every path that gives up on a chunk records its own issue, so reaching the end with
+   * nothing processed and nothing recorded means the loop exited for a reason none of
+   * them covers. Without this the run finishes with no unresolved issue at all, and
+   * `finishRun` reports `completed` for a document that produced no facts — the falsely
+   * successful document plan 2.1 warns against, and worse than a failure because it
+   * looks like a result.
+   *
+   * The counters travel with it: they say which exit was taken, which is what a reader
+   * needs to tell a throttled document from a chunking bug.
+   */
+  if (processed === 0 && chunks.length > 0 && failed === 0 && !stoppedEarly) {
+    await recordIssue(db, context.job.runId, {
+      stage: 'extracting',
+      failureKind: 'extraction_attempted_nothing',
+      failureClass: 'transient',
+      message: `extraction ended having attempted none of ${chunks.length} chunks (dispatched ${next}, processed ${processed}, failed ${failed}, tokens ${promptTokens + completionTokens} of budget ${tokenBudget})`,
+    });
+  }
+
   return {
     chunksTotal: chunks.length,
     chunksProcessed: processed,
