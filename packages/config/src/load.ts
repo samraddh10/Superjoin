@@ -51,7 +51,7 @@ const optionalSecret = z
   });
 
 const schema = z.object({
-  DATABASE_URL: nonEmpty('postgres://superjoin:superjoin@localhost:5432/superjoin'),
+  DATABASE_URL: nonEmpty('postgres://superjoin:superjoin@localhost:55432/superjoin'),
   STORAGE_DIR: nonEmpty('./storage'),
   PORT: intInRange(1, 65535, 3000),
 

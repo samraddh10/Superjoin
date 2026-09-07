@@ -19,7 +19,13 @@ services:
     ports:
       # Exposed so migrations and tests can run on the host against the same database
       # the containers use.
-      - '5432:5432'
+      #
+      # 55432 rather than 5432 deliberately. The default port collides with any other
+      # Postgres already running on a developer machine, and a collision there is not
+      # merely inconvenient: DATABASE_URL would still connect, to the wrong database,
+      # and migrations would be applied to someone else's schema. A distinctive port
+      # fails loudly instead. Containers reach each other on the internal 5432.
+      - '55432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
