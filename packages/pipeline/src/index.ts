@@ -110,3 +110,16 @@ export {
   type ContentPart,
   type ModelClientConfig,
 } from './model/index.ts';
+
+export {
+  buildLayout,
+  detectGutters,
+  groupLines,
+  toLayoutText,
+  type Gutter,
+  type LayoutOptions,
+  type LayoutRegion,
+  type PageLayout,
+  type TextBlock,
+  type TextLine,
+} from './parsing/layout.ts';
