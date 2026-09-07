@@ -108,6 +108,13 @@ export interface EntityResolution {
   readonly rejectedCandidates: readonly string[];
   /** Model calls this resolution actually spent, so a caller can budget them. */
   readonly adjudications: number;
+  /**
+   * An adjudication failed rather than answered.
+   *
+   * Reported so a stage can stop asking a provider that is down. Retrying a quota
+   * exhaustion is not recovery, it is the same wait paid again for every later subject.
+   */
+  readonly adjudicationFailed: boolean;
 }
 
 export interface EntityCandidate {
@@ -180,6 +187,7 @@ export async function resolveEntity(
           : 'the normalized name already exists in this collection',
       rejectedCandidates: [],
       adjudications: 0,
+      adjudicationFailed: false,
     };
   }
 
@@ -203,6 +211,7 @@ export async function resolveEntity(
       reason: 'a recorded alias points at this entity',
       rejectedCandidates: [],
       adjudications: 0,
+      adjudicationFailed: false,
     };
   }
 
@@ -212,11 +221,13 @@ export async function resolveEntity(
   const rejected: string[] = [];
   const budget = options.maxAdjudications ?? 1;
   let adjudications = 0;
+  let adjudicationFailed = false;
 
   if (candidates.length > 0 && options.client !== undefined && budget > 0) {
     for (const candidate of candidates.slice(0, budget)) {
       adjudications += 1;
       const verdict = await adjudicate(options.client, options.subject, candidate, options.evidence ?? []);
+      if (verdict.failed === true) adjudicationFailed = true;
 
       if (verdict.same) {
         await recordAlias(db, candidate.id, options.subject, label, options.sourceBlockId);
@@ -227,6 +238,7 @@ export async function resolveEntity(
           reason: verdict.reason,
           rejectedCandidates: rejected,
           adjudications,
+          adjudicationFailed,
         };
       }
 
@@ -252,6 +264,7 @@ export async function resolveEntity(
         : 'no existing entity matched this subject',
     rejectedCandidates: rejected,
     adjudications,
+    adjudicationFailed,
   };
 }
 
@@ -293,6 +306,8 @@ async function gatherCandidates(
 interface Adjudication {
   readonly same: boolean;
   readonly reason: string;
+  /** The call itself failed, as opposed to answering "different". See the catch below. */
+  readonly failed?: boolean;
 }
 
 /**
@@ -368,7 +383,11 @@ async function adjudicate(
     };
   } catch (error) {
     const kind = error instanceof ModelError ? error.kind : 'unexpected_error';
-    return { same: false, reason: `left unmerged: the adjudication failed (${kind})` };
+    // `failed` rather than a bare `same: false`. A considered "these are different
+    // companies" and "the provider is down" both leave the subject unmerged, but only one
+    // of them means asking again is pointless — and without the distinction a stage kept
+    // paying five retries and their backoff for every remaining subject.
+    return { same: false, failed: true, reason: `left unmerged: the adjudication failed (${kind})` };
   }
 }
 

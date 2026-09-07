@@ -12,7 +12,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 
 import { closeDatabase, collections, createDatabase, type DatabaseHandle } from '@superjoin/db';
 
-import type { CompletionProvider, CompletionResult } from '../model/index.ts';
+import { ModelError, type CompletionProvider, type CompletionResult } from '../model/index.ts';
 import { normalizeEntityLabel, resolveEntity } from './entities.ts';
 import { factGroupId } from './stage.ts';
 
@@ -213,5 +213,56 @@ describe.skipIf(!reachable)('adjudication budget', () => {
     expect(asked).toHaveLength(0);
     expect(resolution.adjudications).toBe(0);
     expect(resolution.method).toBe('exact');
+  });
+});
+
+/**
+ * Telling a considered "no" apart from a provider that is not answering.
+ *
+ * Both leave the subject unmerged, but only one means asking again is pointless. Without
+ * the distinction the stage kept paying the client's full retry ladder and its backoff for
+ * every remaining subject after the quota was gone — the tail of a run that had already
+ * lost the ability to adjudicate anything.
+ */
+describe.skipIf(!reachable)('a failing adjudicator', () => {
+  it('reports the failure rather than passing it off as "different"', async () => {
+    const { collectionId } = await seedCollection();
+
+    const failing: CompletionProvider = {
+      mode: 'live',
+      model: 'stub/failing',
+      async complete(): Promise<CompletionResult> {
+        throw new ModelError('quota exhausted', 'provider_rate_limited', true);
+      },
+    };
+
+    await resolveEntity(database.db, { collectionId, subject: 'Epsilon Roadways One' });
+    const resolution = await resolveEntity(database.db, {
+      collectionId,
+      subject: 'Epsilon Roadways Two',
+      client: failing,
+    });
+
+    expect(resolution.adjudications).toBe(1);
+    expect(resolution.adjudicationFailed).toBe(true);
+    // Still unmerged: a failed question is never taken as a yes.
+    expect(resolution.method).toBe('created');
+  });
+
+  it('does not report a failure when the adjudicator simply says no', async () => {
+    const { collectionId } = await seedCollection();
+    const asked: string[] = [];
+    const client = stubClient(asked, { same: false, reason: 'a parent and its subsidiary' });
+
+    await resolveEntity(database.db, { collectionId, subject: 'Zeta Haulage One' });
+    const resolution = await resolveEntity(database.db, {
+      collectionId,
+      subject: 'Zeta Haulage Two',
+      client,
+    });
+
+    expect(resolution.adjudications).toBe(1);
+    expect(resolution.adjudicationFailed).toBe(false);
+    expect(resolution.method).toBe('created');
   });
 });
