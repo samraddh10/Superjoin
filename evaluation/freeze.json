@@ -1,0 +1,22 @@
+{
+  "$comment": "Plan 8.3: prompts and normalization rules are frozen before the held-out collection is processed for the first time. This file is that freeze, and evaluation/src/freeze.test.ts enforces it: change any constant below without changing this file and the suite fails. Editing a value here to make the test pass is not a fix, it is a new freeze, and it invalidates the generalization claim unless the held-out set is rerun.",
+  "frozen_at": "2026-09-08",
+  "frozen_at_commit": "df8fd81",
+  "development_collection": "delhivery",
+  "held_out_collection": "india-macroeconomy",
+  "versions": {
+    "PARSER_VERSION": "native-text@1",
+    "TRANSCRIPTION_PROMPT_VERSION": "table-transcribe@1",
+    "EXTRACTION_PROMPT_VERSION": "claim-extract@1",
+    "NORMALIZATION_VERSION": "normalize@1",
+    "ENTITY_MATCH_PROMPT_VERSION": "entity-match@1",
+    "CHECKS_VERSION": "checks@1",
+    "RELATIONSHIP_PROMPT_VERSION": "relationship-classify@1",
+    "COMPARISON_METHOD_VERSION": "checks@1+relationship-classify@1"
+  },
+  "model": {
+    "llm": "google/gemma-4-26b-a4b-it:free",
+    "embedding": "Xenova/all-mpnet-base-v2",
+    "embedding_dimensions": 768
+  }
+}
