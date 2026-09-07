@@ -61,7 +61,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (!reachable) return;
-  await boss.stop({ wait: false });
+  await boss.stop({ graceful: true, timeout: 5000 });
   await closeDatabase(database);
   await rm(storageDir, { recursive: true, force: true });
 });
