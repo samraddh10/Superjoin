@@ -47,6 +47,32 @@ Read in order this gives FY20 = (2,533), FY21 = (2,532). Positioned extraction g
 
 Two nearly equal adjacent values make this silent: the wrong answer is plausible and off by only one unit. Any claim sourced from a chart page must carry positional evidence or be held at `needs_review`.
 
+#### Confirmed against the project dependency (Phase 1.2)
+
+The finding above came from PyMuPDF, used as a throwaway reconnaissance tool. It has since been reproduced with `pdfjs-dist` 6.3.289, which is what the pipeline actually runs. Measuring horizontal midpoints rather than left edges, because charts centre a value over its column and a value string is wider than its label:
+
+| Run | x-centre | Binds to | Distance |
+|---|---|---|---|
+| `(2,532)` | 973.6 | `FY20` @ 975.3 | 1.7pt |
+| `(2,533)` | 998.2 | `FY21` @ 998.3 | 0.2pt |
+| `(4,039)` | 1045.1 | `FY23` @ 1044.8 | 0.3pt |
+
+Column pitch on this axis is 23.2pt, so every binding is an order of magnitude inside its column. The mapping is FY20 = (2,532), FY21 = (2,533), as the prospectus independently reports. This is pinned as a regression test in `src/extraction/pdf-text.test.ts`, which asserts both that reading order is wrong here and that positional binding is right, so the mitigation cannot silently stop being exercised.
+
+#### The inversion is local, which makes it worse
+
+Reading order is **not** uniformly wrong on chart pages. It is usually right.
+
+The top-five-customers chart sits on the same physical page, at the same five column positions, and `pdfjs-dist` emits it in correct left-to-right order: 41.8, 42.7, 40.5, 39.1, 38.4. Only the adjusted-EBITDA chart, a few hundred points higher on the same sheet, comes out inverted.
+
+Three consequences, and they are the reason this section exists:
+
+- There is no page-level or document-level signal that marks reading order as untrustworthy. A page that inverts one chart emits the next one correctly.
+- No cheap heuristic catches it. The inverted pair is indistinguishable, by any property other than coordinates, from the many pairs that are fine.
+- Positional binding must therefore be applied to **every** chart value unconditionally. Applying it only where reading order "looks wrong" would miss exactly this case, because it does not look wrong.
+
+A corollary for the classifier: a chart value bound to its label by coordinates is ordinary evidence, not a special case needing review. What earns `needs_review` is a value the binder could not place — one sitting more than half a column pitch from any label, or too close to call between two. That distinction is implemented in `src/extraction/axis-binding.ts`, which returns no label and a stated reason rather than a nearest guess.
+
 ### F2: multi-column reading order merges distinct lists
 
 `doc-02` page 20 places "Board of Directors" and "Key Managerial Personnel" side by side. Linear extraction interleaves them:
@@ -97,4 +123,18 @@ Per-document character counts from native extraction: `doc-01` 336,394; `doc-02`
 
 ## Environment gap found during inspection
 
-`node` is not on `PATH` on this machine (`bun`, `uv`, `jj`, `python3` are). Node 24 must be installed before Phase 1.1, since `pdfjs-dist`, `@napi-rs/canvas` and `pg-boss` run on Node rather than under bun.
+At the time of inspection `node` was not on `PATH` on this machine (`bun`, `uv`, `jj`, `python3` were), and the conclusion recorded here was that Node 24 must be installed before Phase 1.1, since `pdfjs-dist`, `@napi-rs/canvas` and `pg-boss` run on Node rather than under bun.
+
+**Resolved at Phase 1.1, and both halves of that conclusion were wrong.**
+
+Node is now present at v22.14.0, and bun is not installed. More importantly, Node 24 is not a requirement. The stated engine constraints are:
+
+| Package | Requires |
+|---|---|
+| `pdfjs-dist` 6.3.289 | `node >=22.13.0 \|\| >=24` |
+| `pg-boss` 12.30.0 | `node >=22.12.0` |
+| `@napi-rs/canvas` 1.0.8 | no constraint below 22 |
+
+v22.14.0 satisfies all three, and extraction has been verified end to end on it. `package.json` pins `engines.node` to `>=22.13.0`, the highest of the three, rather than to a major version nobody needs.
+
+The bun/Node split this note anticipated has been dropped in favour of Node only. The split existed to keep bun for everything except the three packages above; since those three sit at the centre of the pipeline, the exception would have covered most of the code. One runtime is also one less thing to install and document in the clean-checkout path that acceptance criterion E1 tests.
