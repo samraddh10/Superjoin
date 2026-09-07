@@ -187,9 +187,17 @@ export async function resolveOpenIssues(
     .update(processingIssues)
     .set({ resolution: 'resolved', resolutionNote: note })
     .where(
+      // The cutoff is when the issue was last *seen*, not when it was first recorded.
+      //
+      // recordIssue deduplicates on (run, kind, page) and updates the existing row rather
+      // than inserting a second one, so a failure that recurs keeps its original
+      // createdAt. Cutting on createdAt therefore resolved issues this very attempt had
+      // just re-recorded, and the run then finished `completed` with nothing extracted:
+      // every chunk throttled, every issue marked "a later attempt completed this stage",
+      // and no unresolved issue left for finishRun to notice.
       sql`${processingIssues.runId} = ${runId}
         and ${processingIssues.resolution} in ('open', 'retrying')
-        and ${processingIssues.createdAt} < ${attemptStartedAt}`,
+        and coalesce(${processingIssues.lastAttemptAt}, ${processingIssues.createdAt}) < ${attemptStartedAt}`,
     );
 }
 

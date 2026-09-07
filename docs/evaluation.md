@@ -85,20 +85,45 @@ failure because it looks like a result: the documents view showed a green "compl
 document with no facts, and `finishRun` had no unresolved issue to reach
 `completed_with_issues` with.
 
-**Status: partially addressed, root cause not established.** A guard was added at the end
-of the extraction stage: reaching the end having attempted none of a non-empty chunk list
-now records an `extraction_attempted_nothing` issue carrying the loop counters, which both
-makes the run report `completed_with_issues` and says which exit was taken. On the first
-attempt the guard did not fire, which narrows the fault to something before the end of
-`extractDocument` — the stage is entered (it writes `chunks_total`, the model name and the
-prompt version) and then returns without attempting a chunk, recording nothing.
+**Root cause: the cutoff in `resolveOpenIssues` used the wrong timestamp. Fixed.**
 
-The remaining suspect is job delivery rather than the stage itself: `POST /runs/{id}/retry`
-resets the run row and enqueues a job under a singleton key on the document, and the API's
-own comment notes that a second job for the same document is silently dropped rather than
-rejected. A dropped retry would leave the row reset to `queued` while an earlier job's
-completion writes the terminal stage, which fits every observation. This has not been
-confirmed, so it is written here as the open hypothesis it is, not as a diagnosis.
+`recordIssue` deduplicates on `(run, failure kind, physical page)`. When a failure recurs
+it *updates* the row it already has — incrementing `attemptCount`, refreshing `message` and
+`lastAttemptAt` — and deliberately leaves `createdAt` at the first sighting, so one
+recurring problem stays one row with a count rather than becoming forty.
+
+`resolveOpenIssues` decided which issues belonged to *earlier* attempts with
+`createdAt < attemptStartedAt`. For a recurring issue that timestamp is the first sighting,
+which by definition predates the current attempt. So the issues this attempt had just
+re-recorded were marked `resolved`, with the note "a later attempt completed this stage",
+when nothing had completed. `finishRun` counts unresolved issues to choose between
+`completed` and `completed_with_issues`, found none, and reported success.
+
+The stored rows show it plainly — `created_at` from the first run, `last_attempt_at` from
+the retry three hours later, `attempt_count` of four, and `resolution = resolved`:
+
+| failure kind | attempts | resolution | created | last attempt |
+|---|---|---|---|---|
+| `visual_route_throttled` | 4 | resolved | 19:05:34 | 20:01:16 |
+| `extraction_throttled` | 4 | resolved | 19:06:55 | 20:02:41 |
+
+The fix is to cut on when the issue was last *seen* rather than when it was first recorded:
+`coalesce(last_attempt_at, created_at) < attemptStartedAt`. An issue the current attempt
+touched now stays open; one that stopped recurring is still resolved, which is what the
+cutoff existed for.
+
+Two things this rules out, both of which looked plausible at the time. It is not a dropped
+retry: all four pg-boss jobs for the document reached `completed`, with no send returning
+null despite the singleton key on the document id. And it is not the extraction stage:
+called directly against the same 26 chunks with a client that always throws the provider's
+rate-limit error, it attempts four chunks, records four issues and sets `stoppedEarly`,
+exactly as intended. The extraction stage was correct throughout; only the resolution
+sweep that ran after it was wrong.
+
+Regression test: `packages/pipeline/src/processor.test.ts`, "an issue that recurs on a
+later attempt". It fails against the old cutoff and passes against the new one, and its
+companion checks that an issue which stops recurring is still resolved — otherwise the fix
+would be to resolve nothing, which would hide successful recovery instead.
 
 ## Robustness checks (plan 8.2)
 

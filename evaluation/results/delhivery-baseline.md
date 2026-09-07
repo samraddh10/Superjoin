@@ -1,6 +1,6 @@
 # Evaluation results
 
-Generated 2026-09-07T20:05:07.315Z against collection **Delhivery (Phase 7 demo)** (`1b752739-d556-4618-a22b-eb4242ec208b`), scored on `evaluation/goldset.json` version 0.1.
+Generated 2026-09-07T20:17:49.726Z against collection **Delhivery (Phase 7 demo)** (`1b752739-d556-4618-a22b-eb4242ec208b`), scored on `evaluation/goldset.json` version 0.1.
 
 The gold set holds **50 claims and 25 pairs** across 3 documents. It is development data: it was read before the system was built. The held-out measurement is the generalization run in section 8.3.
 
@@ -71,12 +71,11 @@ Not scored, because a claim or the relationship itself was not produced: P01, P0
 | Relationships created | 0 |
 | Input tokens | 0 |
 | Output tokens | 0 |
-| Wall clock | 3892.5s |
+| Wall clock | 4693.0s |
 
 Run stages reached:
 
-- completed: 1
-- completed_with_issues: 2
+- completed_with_issues: 3
 
 | Failure kind | Occurrences |
 |---|---|

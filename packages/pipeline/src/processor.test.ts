@@ -326,3 +326,98 @@ describe('classifyFailure', () => {
     expect(classifyFailure(new Error('something odd')).failureClass).toBe('transient');
   });
 });
+
+/**
+ * A failure that keeps happening must keep being reported.
+ *
+ * This is the regression for a real defect. `recordIssue` deduplicates on (run, kind,
+ * page) and updates the existing row rather than inserting a second one, so an issue that
+ * recurs keeps its original `createdAt`. `resolveOpenIssues` cut on `createdAt`, so it
+ * resolved issues the current attempt had just re-recorded, and the run finished
+ * `completed` having extracted nothing: every chunk throttled, every issue marked "a later
+ * attempt completed this stage", and nothing unresolved for `finishRun` to notice.
+ *
+ * Observed on the earnings deck against a throttled provider: stage `completed`, 0 of 26
+ * chunks, no claims, and four issues all marked resolved with an attempt count of four.
+ */
+describe.skipIf(!reachable)('an issue that recurs on a later attempt', () => {
+  it('stays open, so the run still reports completed_with_issues', async () => {
+    const { job } = await seedRun();
+    const { db } = database;
+
+    // Attempt one records the failure and fails the stage.
+    let attempt = 0;
+    const alwaysThrottled: StageHandler = {
+      stage: 'extracting',
+      async run(context) {
+        attempt += 1;
+        await recordIssue(db, context.job.runId, {
+          stage: 'extracting',
+          failureKind: 'extraction_throttled',
+          failureClass: 'transient',
+          physicalPage: 2,
+          message: `chunk 0: throttled on attempt ${attempt}`,
+        });
+      },
+    };
+
+    await processDocumentJob({ database, storageDir, stages: [alwaysThrottled] }, job);
+    const first = await readRun(job.runId);
+    expect(first.stage).toBe('completed_with_issues');
+
+    // The same failure again on a second attempt. recordIssue updates the row it already
+    // has, which leaves createdAt pointing at the first attempt.
+    await processDocumentJob({ database, storageDir, stages: [alwaysThrottled] }, job);
+
+    const issues = await db
+      .select()
+      .from(processingIssues)
+      .where(eq(processingIssues.runId, job.runId));
+
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.attemptCount).toBe(2);
+    // The failure is still happening, so it is not resolved and the run says so.
+    expect(issues[0]!.resolution).not.toBe('resolved');
+
+    const second = await readRun(job.runId);
+    expect(second.stage).toBe('completed_with_issues');
+  });
+
+  it('still resolves an issue that stops recurring', async () => {
+    const { job } = await seedRun();
+    const { db } = database;
+
+    const failsOnce: StageHandler = {
+      stage: 'extracting',
+      async run(context) {
+        const [existing] = await db
+          .select()
+          .from(processingIssues)
+          .where(eq(processingIssues.runId, context.job.runId));
+        if (existing !== undefined) return;
+
+        await recordIssue(db, context.job.runId, {
+          stage: 'extracting',
+          failureKind: 'extraction_throttled',
+          failureClass: 'transient',
+          physicalPage: 2,
+          message: 'chunk 0: throttled',
+        });
+      },
+    };
+
+    await processDocumentJob({ database, storageDir, stages: [failsOnce] }, job);
+    expect((await readRun(job.runId)).stage).toBe('completed_with_issues');
+
+    // The second attempt does not hit the problem, so the earlier record is stale and is
+    // cleared. Without this the cutoff would never resolve anything.
+    await processDocumentJob({ database, storageDir, stages: [failsOnce] }, job);
+
+    const issues = await db
+      .select()
+      .from(processingIssues)
+      .where(eq(processingIssues.runId, job.runId));
+    expect(issues[0]!.resolution).toBe('resolved');
+    expect((await readRun(job.runId)).stage).toBe('completed');
+  });
+});
