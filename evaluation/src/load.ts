@@ -202,3 +202,83 @@ export async function loadCollection(
     cost,
   };
 }
+
+/**
+ * What parsing produced, independent of any gold set.
+ *
+ * Plan 8.1 asks for failed-page and chunk counts; this is that, plus the structural
+ * coverage that says whether parsing generalized. It needs no ground truth, which is the
+ * point: on a held-out collection with no reviewed sample, this is the part that can
+ * still be measured, and a drop in printed-label or bounding-box coverage is a finding
+ * even when nothing downstream ran.
+ */
+export interface StructureSummary {
+  readonly blocks: number;
+  readonly pagesTotal: number;
+  readonly pagesWithBlocks: number;
+  readonly byType: ReadonlyMap<string, number>;
+  readonly withPrintedLabel: number;
+  readonly withBoundingBox: number;
+  readonly modelTranscribed: number;
+}
+
+export async function loadStructure(
+  db: Database,
+  collectionId: string,
+): Promise<StructureSummary> {
+  const documentRows = await db
+    .select({ id: documents.id, pageCount: documents.pageCount })
+    .from(documents)
+    .where(eq(documents.collectionId, collectionId));
+
+  const documentIds = documentRows.map((row) => row.id);
+  const pagesTotal = documentRows.reduce((total, row) => total + (row.pageCount ?? 0), 0);
+
+  if (documentIds.length === 0) {
+    return {
+      blocks: 0,
+      pagesTotal: 0,
+      pagesWithBlocks: 0,
+      byType: new Map(),
+      withPrintedLabel: 0,
+      withBoundingBox: 0,
+      modelTranscribed: 0,
+    };
+  }
+
+  const rows = await db
+    .select({
+      documentId: sourceBlocks.documentId,
+      physicalPage: sourceBlocks.physicalPage,
+      blockType: sourceBlocks.blockType,
+      printedPageLabel: sourceBlocks.printedPageLabel,
+      bboxX: sourceBlocks.bboxX,
+      extractionMethod: sourceBlocks.extractionMethod,
+    })
+    .from(sourceBlocks)
+    .where(inArray(sourceBlocks.documentId, documentIds));
+
+  const byType = new Map<string, number>();
+  const pages = new Set<string>();
+  let withPrintedLabel = 0;
+  let withBoundingBox = 0;
+  let modelTranscribed = 0;
+
+  for (const row of rows) {
+    byType.set(row.blockType, (byType.get(row.blockType) ?? 0) + 1);
+    pages.add(`${row.documentId}#${row.physicalPage}`);
+    if (row.printedPageLabel !== null) withPrintedLabel += 1;
+    if (row.bboxX !== null) withBoundingBox += 1;
+    if (row.extractionMethod === 'model_transcription') modelTranscribed += 1;
+  }
+
+  return {
+    blocks: rows.length,
+    pagesTotal,
+    pagesWithBlocks: pages.size,
+    byType,
+    withPrintedLabel,
+    withBoundingBox,
+    modelTranscribed,
+  };
+}

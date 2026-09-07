@@ -1,8 +1,8 @@
 # Evaluation results
 
-Generated 2026-09-07T20:17:49.726Z against collection **Delhivery (Phase 7 demo)** (`1b752739-d556-4618-a22b-eb4242ec208b`), scored on `evaluation/goldset.json` version 0.1.
+Generated 2026-09-07T20:32:55.672Z against collection **Delhivery (Phase 7 demo)** (`1b752739-d556-4618-a22b-eb4242ec208b`).
 
-The gold set holds **50 claims and 25 pairs** across 3 documents. It is development data: it was read before the system was built. The held-out measurement is the generalization run in section 8.3.
+Scored on `evaluation/goldset.json` version 0.1, which holds **50 claims and 25 pairs** across 3 documents. It is development data: it was read before the system was built.
 
 > **No claims were extracted in this run, so every accuracy figure below is
 > unmeasured rather than zero.** The counts and the failure breakdown are real
@@ -83,6 +83,27 @@ Run stages reached:
 | `visual_route_throttled` | 9 |
 | `visual_route_abandoned` | 3 |
 | `extraction_abandoned` | 3 |
+
+## 7. Parsing and structure
+
+Measured without ground truth, so it is available on a held-out collection too. This is the part of the pipeline that runs before the model, and on an unfamiliar collection it is the part a generalization claim can actually rest on.
+
+| Measure | Value |
+|---|---|
+| Source blocks | 3885 |
+| Pages that produced blocks | 216 / 227 |
+| Blocks with a bounding box | 100.0% (3885/3885) |
+| Blocks with a printed page label | 96.8% (3759/3885) |
+| Blocks from a model transcription | 0 |
+
+| Block type | Count |
+|---|---|
+| paragraph | 2898 |
+| table | 548 |
+| heading | 369 |
+| list | 70 |
+
+A page producing no blocks is not necessarily a failure: a cover or a divider legitimately has no extractable text. The count is reported rather than judged, because deciding which is which needs the page in front of you.
 
 ## Cost
 

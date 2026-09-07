@@ -142,17 +142,70 @@ change. Every item plan 8.2 names has a test:
 | Wrong table-column selection | values bound by coordinate; a value midway between columns refuses to guess |
 | Unsupported evidence | corroboration refused on a single shared passage, and refused when a claim is held for review |
 
-## Held-out data (plan 8.3)
+## Generalization on held-out data (plan 8.3)
 
-**Not yet run.** The India macroeconomy collection is the held-out set, and plan 8.3
-requires prompts and normalization rules to be frozen before it is processed for the first
-time. Running it now would produce the same throttled result as the development set while
-spending the one chance to measure generalization on a first, uninformative attempt.
+**Run.** Report: [`evaluation/results/india-macro-generalization.md`](../evaluation/results/india-macro-generalization.md).
 
-The freeze is what matters and it is recorded: `EXTRACTION_PROMPT_VERSION`,
-`RELATIONSHIP_PROMPT_VERSION`, `NORMALIZATION_VERSION`, `CHECKS_VERSION` and
-`COMPARISON_METHOD_VERSION` are stored on every run and every relationship, so a later
-generalization run is comparable to this baseline or is visibly not.
+The India macroeconomy collection is three documents from three publishers the system had
+never seen — the Economic Survey, an RBI annual report and an IMF Article IV consultation —
+none of them laid out like the Delhivery filings the pipeline was built against. 284 pages.
+
+Prompts and rules were frozen first, in `evaluation/freeze.json`, committed at `da901c6`
+*before* the collection was created. `evaluation/src/freeze.test.ts` compares the file
+against the constants the pipeline actually stamps onto runs, so a prompt cannot now change
+without the suite failing. Editing the file to make that pass is a new freeze, not a fix.
+
+An earlier draft of this document argued for not running 8.3 while throttled, on the
+grounds that it would spend the one chance at generalization. That was wrong and is
+corrected here: a run that extracts nothing reveals nothing about the documents, so it
+cannot compromise their held-out status. What would compromise it is tuning on observed
+results, and nothing has been tuned.
+
+### What generalized
+
+Everything before the model, which is the part that could run:
+
+| | Delhivery (development) | India macroeconomy (held out) |
+|---|---|---|
+| Pages parsed | 227 / 227 | **284 / 284** |
+| Pages producing blocks | 216 / 227 | 277 / 284 |
+| Source blocks | 3,885 | 5,516 |
+| Blocks with a bounding box | 100% | **100%** |
+| Blocks with a printed page label | 96.8% | **65.6%** |
+| Chunks produced | 457 | 676 |
+| Distinct failure kinds | 4 | 4 (the same four) |
+
+Two results worth stating plainly.
+
+**Parsing held.** Every page of every document produced output, coordinates were recovered
+for every block, and no new failure kind appeared — the held-out collection produced the
+same four throttling issues as the development one and nothing else. Layout reconstruction,
+table detection, chunking and coordinate capture were not tuned to Delhivery in any way
+that shows here.
+
+**Printed page labels did not.** Label coverage falls from 96.8% to 65.6%. This is the
+clearest generalization finding available from this run and it is recorded before any
+tuning, as plan 8.3 requires. It is also the least alarming one it could have been: the
+schema treats a null label as the normal case and never uses a label to locate a page,
+precisely because `docs/difficult-pages.md` found labels unreliable in the starter set. So
+the degradation costs display detail, not evidence integrity — a citation still resolves to
+the right physical page. Whether the missing 34% are pages that genuinely print no number,
+or pages whose number the reader failed on, is not established and would need the pages in
+front of you.
+
+### What could not be measured
+
+Extraction, normalization, retrieval and relationship classification, for the same reason
+as on the development set: the free pool returned 429 to all six probes at the time of the
+run, and 0 of 676 chunks were extracted. Generalization of the model-dependent half of the
+pipeline is therefore **unmeasured**, not measured-as-zero.
+
+The collection has no hand-reviewed gold set, and deliberately so: building one means
+reading the documents, and reading them is what stops a set being held out. The scorer
+takes `--goldset none` and omits the accuracy sections rather than printing a column of
+"not measured" against a sample that does not exist.
+
+When the provider quota is resolved, this is the run to repeat first, under the same freeze.
 
 ## What no number here should be read as
 

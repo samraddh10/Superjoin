@@ -16,7 +16,7 @@ import { loadConfig, loadDotEnvFile } from '@superjoin/config';
 import { closeDatabase, createDatabase } from '@superjoin/db';
 
 import { goldDocumentResolver, loadGoldset } from './goldset.ts';
-import { loadCollection, resolveCollection } from './load.ts';
+import { loadCollection, loadStructure, resolveCollection } from './load.ts';
 import {
   measureCandidateRecall,
   measureCoverage,
@@ -52,7 +52,10 @@ const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const goldsetPath = resolve(argument('goldset', join(repoRoot, 'evaluation/goldset.json')));
 const outPath = resolve(argument('out', join(repoRoot, 'evaluation/results/latest.md')));
 
-const goldset = await loadGoldset(goldsetPath);
+// `--goldset none` reports a collection that has no reviewed sample, which is what the
+// held-out collection of plan 8.3 is by design.
+const goldset =
+  argument('goldset', '') === 'none' ? null : await loadGoldset(goldsetPath);
 const handle = createDatabase(config.databaseUrl);
 
 try {
@@ -60,19 +63,24 @@ try {
   const loaded = await loadCollection(handle.db, id, name);
   // Produced documents are joined to gold documents on the file's basename, so the
   // scorer never compares an uploaded filename against a gold document id.
-  const goldDocumentOf = goldDocumentResolver(goldset, loaded.filenameOf);
+  const goldDocumentOf =
+    goldset === null ? () => undefined : goldDocumentResolver(goldset, loaded.filenameOf);
 
-  const coverage = measureCoverage(goldset, loaded.claims, goldDocumentOf);
-  const grounding = measureGrounding(goldset, loaded.claims, goldDocumentOf);
+  const structure = await loadStructure(handle.db, id);
+  const empty = { version: '', created: '', collection: '', method: '', conventions: {}, documents: [], claims: [], pairs: [] };
+  const scored = goldset ?? empty;
+
+  const coverage = measureCoverage(scored, loaded.claims, goldDocumentOf);
+  const grounding = measureGrounding(scored, loaded.claims, goldDocumentOf);
   const evidence = measureEvidence(loaded.claims);
   const candidates = measureCandidateRecall(
-    goldset,
+    scored,
     loaded.claims,
     loaded.candidates,
     goldDocumentOf,
   );
   const relationships = measureRelationships(
-    goldset,
+    scored,
     loaded.claims,
     loaded.relationships,
     goldDocumentOf,
@@ -89,6 +97,7 @@ try {
     candidates,
     relationships,
     cost: loaded.cost,
+    structure,
   });
 
   await mkdir(dirname(outPath), { recursive: true });
