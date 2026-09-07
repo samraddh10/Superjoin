@@ -19,7 +19,7 @@ import {
 } from '@superjoin/contracts';
 import { collections } from '@superjoin/db';
 import { ingestDocument, type IngestionContext } from '@superjoin/pipeline';
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 export interface RouteDependencies {
@@ -58,8 +58,13 @@ export async function registerCollectionRoutes(
     };
   });
 
+  /**
+   * Newest first. The interface offers the first entry as the default, and a reviewer who
+   * has just uploaded something means that one; oldest-first would open on whatever
+   * collection they created earliest and never look at again.
+   */
   app.get('/collections', async () => {
-    const rows = await db.select().from(collections).orderBy(collections.createdAt);
+    const rows = await db.select().from(collections).orderBy(desc(collections.createdAt));
     return rows.map((row) => ({
       id: row.id,
       name: row.name,

@@ -1,7 +1,7 @@
-# Local execution for the services the plan names: api, worker, postgres and, later, web.
+# Local execution for the four services the plan names: web, api, worker and postgres.
 #
-# web is added in Phase 7, when it has something to render. pg-boss creates and owns its
-# own schema in this same database, so no separate queue service is needed.
+# pg-boss creates and owns its own schema in this same database, so no separate queue
+# service is needed.
 #
 # The api and worker share one database and one PDF volume, which is what plan section
 # 1.3's exit condition requires them to demonstrate.
@@ -69,6 +69,17 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+
+  # The review interface. Serves the built assets and proxies the API, so the browser
+  # talks to one origin and no CORS policy exists to be wrong.
+  web:
+    build:
+      context: .
+      target: web
+    ports:
+      - '5173:80'
+    depends_on:
+      - api
 
   worker:
     build:

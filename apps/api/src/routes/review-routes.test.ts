@@ -533,6 +533,26 @@ describe.skipIf(!reachable)('relationships', () => {
     expect(other.json().counts.corroborates).toBe(1);
   });
 
+  it('counts every label, including the ones with no rows', async () => {
+    const response = await server.app.inject({
+      method: 'GET',
+      url: `/collections/${fixture.collectionId}/relationships`,
+    });
+
+    // A label absent from the map and a label with zero rows mean the same thing to a
+    // reader, so all six are always present. The contract's record is exhaustive over the
+    // enum, and a partial map fails validation in the browser rather than at the boundary.
+    expect(Object.keys(response.json().counts).sort()).toEqual([
+      'contradicts',
+      'corroborates',
+      'insufficient_context',
+      'likely_contradiction',
+      'reconciled_by_context',
+      'unrelated',
+    ]);
+    expect(response.json().counts.contradicts).toBe(0);
+  });
+
   it('matches a claim on either side of the pair', async () => {
     for (const claimId of [fixture.reportedClaimId, fixture.restatedClaimId]) {
       const response = await server.app.inject({

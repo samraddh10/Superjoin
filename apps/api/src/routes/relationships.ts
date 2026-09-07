@@ -14,6 +14,7 @@
  */
 
 import {
+  relationshipLabelSchema,
   relationshipQuerySchema,
   type ContextDifferenceContract,
   type RelationshipDetail,
@@ -31,6 +32,9 @@ import { loadFactDetails } from './facts-read.ts';
 export interface RelationshipRouteDependencies {
   readonly ingestion: IngestionContext;
 }
+
+/** The six labels of plan 6.3, taken from the contract so the two cannot drift apart. */
+const relationshipLabelValues = relationshipLabelSchema.options;
 
 /** Stored as JSONB, so re-checked here rather than trusted by shape. */
 function readContextDifferences(value: unknown): ContextDifferenceContract[] {
@@ -154,9 +158,14 @@ export async function registerRelationshipRoutes(
       ];
     });
 
+    // Every label, including the ones with no rows. A label absent from the map and a
+    // label with zero rows mean the same thing to a reader, and returning all six keeps
+    // the wire shape complete: the chips can show "contradicts 0", which is a real answer
+    // about this collection rather than a gap the interface has to paper over.
     const counts = Object.fromEntries(
-      labelRows.map((row) => [row.label, row.total]),
+      relationshipLabelValues.map((name) => [name, 0]),
     ) as RelationshipList['counts'];
+    for (const row of labelRows) counts[row.label] = row.total;
 
     return {
       items,

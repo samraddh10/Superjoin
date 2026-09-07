@@ -15,7 +15,7 @@
 
 import { z } from 'zod';
 
-import { processingIssueSchema, runStageSchema } from './index.ts';
+import { processingIssueSchema, runStageSchema } from './runs.ts';
 
 /** Mirrors the claim_status enum. `needs_review` is a real outcome, not a lesser failure. */
 export const claimStatusSchema = z.enum(['accepted', 'needs_review', 'rejected']);
@@ -206,8 +206,15 @@ export const contextDifferenceSchema = z.object({
 export type ContextDifferenceContract = z.infer<typeof contextDifferenceSchema>;
 
 /**
- * A relationship as listed. Carries enough of both claims to be readable without a
- * second request, and no confidence score, per plan 6.4.
+ * A relationship as listed.
+ *
+ * Both claims are carried in full, evidence included, rather than as summaries. The
+ * relationships view has to offer evidence inspection on either side of every pair, and
+ * fetching each claim separately would be a request per row. Declaring them as summaries
+ * would also be false: an object schema strips what it does not declare, so the evidence
+ * the endpoint does send would be removed on arrival.
+ *
+ * No confidence score, per plan 6.4.
  */
 export const relationshipSummarySchema = z.object({
   id: z.uuid(),
@@ -220,8 +227,8 @@ export const relationshipSummarySchema = z.object({
   methodVersion: z.string(),
   modelName: z.string().nullable(),
   promptVersion: z.string().nullable(),
-  claimA: factSummarySchema,
-  claimB: factSummarySchema,
+  claimA: factDetailSchema,
+  claimB: factDetailSchema,
   createdAt: z.string(),
 });
 export type RelationshipSummary = z.infer<typeof relationshipSummarySchema>;
@@ -234,8 +241,6 @@ export type RelationshipSummary = z.infer<typeof relationshipSummarySchema>;
  * label without seeing what the classifier was given.
  */
 export const relationshipDetailSchema = relationshipSummarySchema.extend({
-  claimA: factDetailSchema,
-  claimB: factDetailSchema,
   deterministicChecks: z.unknown().nullable(),
   /** claim_evidence ids the classifier named as justifying this label specifically. */
   supportingEvidenceIds: z.array(z.string()),

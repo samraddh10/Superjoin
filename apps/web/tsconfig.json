@@ -1,0 +1,40 @@
+{
+  // Deliberately not extending tsconfig.base.json. That file describes a Node.js program:
+  // NodeNext resolution, Node type definitions, no DOM. This one runs in a browser and is
+  // emitted by Vite rather than by tsc, so it shares the strictness settings by repetition
+  // rather than inheriting a module system it does not use.
+  "compilerOptions": {
+    "target": "ES2024",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "types": [],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "verbatimModuleSyntax": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    // Vite emits; tsc only checks. allowImportingTsExtensions requires one of these.
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+
+    // Contracts are consumed as source rather than through the package's dist, so the web
+    // build does not depend on the backend packages having been compiled first, and so
+    // tsc resolves them the same way Vite's matching alias does.
+    "baseUrl": ".",
+    "paths": {
+      "@superjoin/contracts": ["../../packages/contracts/src/index.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}
