@@ -33,9 +33,24 @@ export interface Chunk {
   readonly heading: string | null;
   /** Every block this chunk drew from, so a claim can cite the right one. */
   readonly sourceBlockIds: readonly string[];
+  /**
+   * The short handles the chunk text labels its blocks with, and what each resolves to.
+   *
+   * Extraction cites `B2`, not a UUID. Two reasons, both practical: a model asked to
+   * copy a 36-character identifier gets it wrong often enough to matter, and every one
+   * of them it echoes back is spent tokens. The mapping stays here, so a citation is
+   * resolved by lookup rather than trusted.
+   */
+  readonly blockRefs: readonly BlockRef[];
   /** Pages covered. Usually one; a chunk never spans a page silently. */
   readonly physicalPages: readonly number[];
   readonly estimatedTokens: number;
+}
+
+/** One `[B1]`-style handle and the source block it stands for. */
+export interface BlockRef {
+  readonly ref: string;
+  readonly sourceBlockId: string;
 }
 
 export interface ChunkOptions {
@@ -115,6 +130,7 @@ export function chunkSourceBlocks(
 
   let buffer: string[] = [];
   let bufferIds: string[] = [];
+  let bufferRefs: BlockRef[] = [];
   let bufferPage: number | null = null;
   let bufferLabel: string | null = null;
 
@@ -127,11 +143,28 @@ export function chunkSourceBlocks(
       text,
       heading,
       sourceBlockIds: [...bufferIds],
+      blockRefs: [...bufferRefs],
       physicalPages: [bufferPage],
       estimatedTokens: estimateTokens(text),
     });
     buffer = [];
     bufferIds = [];
+    bufferRefs = [];
+  };
+
+  /**
+   * The handle this block carries inside the chunk being built.
+   *
+   * Numbered per chunk rather than per document, so a block split across two chunks is
+   * `B1` in one and whatever its position makes it in the other. Nothing outside a
+   * chunk reads these, and `blockRefs` travels with the text that uses them.
+   */
+  const refFor = (blockId: string): string => {
+    const existing = bufferRefs.find((entry) => entry.sourceBlockId === blockId);
+    if (existing !== undefined) return existing.ref;
+    const ref = `B${bufferRefs.length + 1}`;
+    bufferRefs.push({ ref, sourceBlockId: blockId });
+    return ref;
   };
 
   for (const block of blocks) {
@@ -161,7 +194,9 @@ export function chunkSourceBlocks(
       if (buffer.length > 0 && projected > targetTokens) flush();
       bufferPage = block.physicalPage;
       bufferLabel = block.printedPageLabel;
-      buffer.push(piece);
+      // The handle is resolved after the possible flush, so a block carried into a new
+      // chunk is renumbered there rather than referring to a label that chunk never used.
+      buffer.push(`[${refFor(block.id)}]\n${piece}`);
       if (!bufferIds.includes(block.id)) bufferIds.push(block.id);
     }
   }
