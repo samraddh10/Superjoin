@@ -2,14 +2,15 @@
  * Processing worker.
  *
  * Consumes document jobs from pg-boss and runs them to a terminal stage. This is the only
- * process that will call OpenRouter, per the plan's service boundaries; the API never holds
- * the model key.
+ * process that calls OpenRouter and the only one that loads the local embedding model,
+ * per the plan's service boundaries; the API holds neither.
  *
- * The pipeline stages themselves arrive in Phases 3 to 6. Until then the worker registers
- * no stages, which means a job verifies the document and its stored file and then
- * completes. That is deliberately visible rather than disguised: a run that completes
- * having extracted nothing reports zero claims, and the plan's own progress counters say
- * so.
+ * The full pipeline is registered here: parsing, the visual route, extraction,
+ * normalization and comparison. A stage that cannot do its work does not fail the
+ * document — a throttled chunk costs that chunk, an unavailable embedding model costs
+ * semantic retrieval and not the exact channel — and every one of those degradations is
+ * recorded against the run, so a document that finished with less than it should have
+ * says so rather than looking complete.
  */
 
 // Before anything reads configuration. Node does not load .env on its own.
@@ -23,7 +24,11 @@ import { documents } from '@superjoin/db';
 import {
   DOCUMENT_QUEUE,
   checkReadiness,
+  createComparisonStage,
+  createEmbeddingProvider,
+  createExtractionStage,
   createModelClient,
+  createNormalizationStage,
   createQueueClient,
   createVisualStage,
   ensureStorage,
@@ -61,12 +66,22 @@ function log(level: 'info' | 'error', message: string, fields: Record<string, un
 const modelClient = createModelClient(config, join(config.storageDir, 'model-cache'));
 
 /**
+ * The embedding model, loaded lazily on first use.
+ *
+ * Only the worker holds one, and constructing it costs nothing: the package and its
+ * model download are pulled in when the first claim is embedded, so a worker that never
+ * reaches comparison never pays for them.
+ */
+const embeddings = createEmbeddingProvider(config);
+
+/**
  * The ordered pipeline stages.
  *
  * Parsing reads the text layer; the visual stage re-reads the pages parsing marked as
- * structured. Extraction, normalization and comparison arrive with Phases 4 to 6 and are
- * appended here, so what the worker does — and does not yet do — stays legible in the
- * code that runs jobs.
+ * structured; extraction asks what each chunk asserts and grounds every answer in the
+ * stored text; normalization makes the surviving claims comparable; comparison retrieves
+ * candidate pairs and explains each one. The order is the dependency order, and each
+ * stage moves the run into its own stage name so a progress poll says where the work is.
  */
 const STAGES: readonly StageHandler[] = [
   parsingStage,
@@ -80,6 +95,17 @@ const STAGES: readonly StageHandler[] = [
         .limit(1);
       return row?.contentHash ?? '0'.repeat(64);
     },
+  }),
+  createExtractionStage({
+    client: modelClient,
+    tokenBudget: config.documentTokenBudget,
+    concurrency: config.llmConcurrency,
+  }),
+  createNormalizationStage({ client: modelClient }),
+  createComparisonStage({
+    client: modelClient,
+    embeddings,
+    topK: config.candidateTopK,
   }),
 ];
 
@@ -171,4 +197,6 @@ log('info', 'ready', {
   modelMode: config.modelMode,
   llmModel: config.llmModel,
   llmConcurrency: config.llmConcurrency,
+  embeddingModel: config.embeddingModel,
+  candidateTopK: config.candidateTopK,
 });

@@ -21,6 +21,7 @@ import { documents, processingRuns } from '@superjoin/db';
 import type { DocumentJob } from './queue.ts';
 import {
   beginRun,
+  enterStage,
   finishRun,
   recordIssue,
   resolveOpenIssues,
@@ -201,6 +202,9 @@ export async function processDocumentJob(
 
   for (const handler of options.stages) {
     try {
+      // The run says which stage it is in before the stage runs, so a progress poll
+      // during a long extraction reports extraction rather than whatever ran before it.
+      await enterStage(db, job.runId, handler.stage);
       await handler.run(context);
     } catch (error) {
       const { failureKind, failureClass } = classifyFailure(error);
