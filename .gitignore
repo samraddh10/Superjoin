@@ -9,3 +9,6 @@ build/
 storage/
 .cache/
 starter-datasets.zip
+
+# TypeScript build info
+*.tsbuildinfo

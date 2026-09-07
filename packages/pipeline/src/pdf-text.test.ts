@@ -8,9 +8,8 @@
  * rather than pass for the wrong reason.
  */
 
-import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { before, describe, it } from 'node:test';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import { bindToAxisLabels, columnPitch } from './axis-binding.ts';
 import { extractPageText, type PageText, type PositionedText } from './pdf-text.ts';
@@ -48,16 +47,16 @@ function inBand(
 describe('positional extraction of doc-02 physical page 5', () => {
   let page: PageText;
 
-  before(async () => {
+  beforeAll(async () => {
     page = await extractPageText(new Uint8Array(await readFile(ANNUAL_REPORT)), CHART_PAGE);
   });
 
   it('reports the two-up sheet geometry the annual report is laid out on', () => {
     // A4 landscape. Each physical page holds two printed pages side by side, which is
     // why a page is not a semantic unit for chunking.
-    assert.ok(page.widthPt > page.heightPt, 'expected a landscape sheet');
-    assert.equal(page.physicalPage, CHART_PAGE);
-    assert.ok(page.characterCount > 1000, `expected a dense page, got ${page.characterCount} characters`);
+    expect(page.widthPt > page.heightPt, 'expected a landscape sheet').toBe(true);
+    expect(page.physicalPage).toBe(CHART_PAGE);
+    expect(page.characterCount > 1000, `expected a dense page, got ${page.characterCount} characters`).toBe(true);
   });
 
   describe('the adjusted-EBITDA chart', () => {
@@ -72,12 +71,12 @@ describe('positional extraction of doc-02 physical page 5', () => {
         .filter((item) => /^\(\d,\d{3}\)$/.test(item.text));
 
       const byReadingOrder = [...values].sort((a, b) => a.readingIndex - b.readingIndex);
-      assert.equal(byReadingOrder[0]?.text, '(2,533)');
-      assert.equal(byReadingOrder[1]?.text, '(2,532)');
+      expect(byReadingOrder[0]?.text).toBe('(2,533)');
+      expect(byReadingOrder[1]?.text).toBe('(2,532)');
 
       // Pairing that sequence with the left-to-right axis gives FY20 = (2,533), which
       // is the wrong answer, and is what a linear extractor reports.
-      assert.notEqual(byReadingOrder[0]?.text, '(2,532)');
+      expect(byReadingOrder[0]?.text).not.toBe('(2,532)');
     });
 
     it('binds each value to the correct fiscal year by horizontal position', () => {
@@ -86,19 +85,19 @@ describe('positional extraction of doc-02 physical page 5', () => {
       const values = inRow(page.items, VALUE_ROW_Y, CHART_MIN_X, CHART_MAX_X)
         .filter((item) => /^\(\d,\d{3}\)$/.test(item.text));
 
-      assert.deepEqual(labels.map((l) => l.text), ['FY20', 'FY21', 'FY22', 'FY23', 'FY24']);
+      expect(labels.map((l) => l.text)).toEqual(['FY20', 'FY21', 'FY22', 'FY23', 'FY24']);
 
       const bound = bindToAxisLabels(values, labels);
       const mapping = new Map(bound.map((b) => [b.value.text, b.label?.text ?? null]));
 
       // The finding, stated as an assertion: FY20 = (2,532) and FY21 = (2,533),
       // corroborated by doc-01 physical page 43 at (2,531.93) and (2,532.83).
-      assert.equal(mapping.get('(2,532)'), 'FY20');
-      assert.equal(mapping.get('(2,533)'), 'FY21');
-      assert.equal(mapping.get('(4,039)'), 'FY23');
+      expect(mapping.get('(2,532)')).toBe('FY20');
+      expect(mapping.get('(2,533)')).toBe('FY21');
+      expect(mapping.get('(4,039)')).toBe('FY23');
 
       for (const binding of bound) {
-        assert.equal(binding.ambiguous, false, `${binding.value.text}: ${binding.reason}`);
+        expect(binding.ambiguous).toBe(false, `${binding.value.text}: ${binding.reason}`);
       }
     });
 
@@ -107,15 +106,12 @@ describe('positional extraction of doc-02 physical page 5', () => {
         .filter((item) => /^FY\d{2}$/.test(item.text));
 
       const pitch = columnPitch(labels);
-      assert.ok(pitch !== null && pitch > 20, `expected a measurable column pitch, got ${pitch}`);
+      expect(pitch !== null && pitch > 20, `expected a measurable column pitch, got ${pitch}`).toBe(true);
 
       const values = inRow(page.items, VALUE_ROW_Y, CHART_MIN_X, CHART_MAX_X)
         .filter((item) => /^\(\d,\d{3}\)$/.test(item.text));
       for (const binding of bindToAxisLabels(values, labels)) {
-        assert.ok(
-          binding.deltaX < (pitch ?? 0) * 0.1,
-          `${binding.value.text} sits ${binding.deltaX.toFixed(1)}pt from its column, which is not a clean match`,
-        );
+        expect(binding.deltaX < (pitch ?? 0) * 0.1, `${binding.value.text} sits ${binding.deltaX.toFixed(1)}pt from its column, which is not a clean match`).toBe(true);
       }
     });
   });
@@ -131,20 +127,16 @@ describe('positional extraction of doc-02 physical page 5', () => {
     // binding has to be applied to every chart value unconditionally, because the one
     // case where order flips looks exactly like the cases where it does not.
     const values = inBand(page.items, 220, 250, 950, 1090).filter((item) => /^\d{2}\.\d$/.test(item.text));
-    assert.equal(values.length, 5);
+    expect(values.length).toBe(5);
 
     const byReadingOrder = [...values].sort((a, b) => a.readingIndex - b.readingIndex);
-    assert.deepEqual(
-      byReadingOrder.map((item) => item.text),
-      ['41.8', '42.7', '40.5', '39.1', '38.4'],
-      'expected this chart to be emitted in column order',
-    );
+    expect(byReadingOrder.map((item) => item.text), 'expected this chart to be emitted in column order').toEqual(['41.8', '42.7', '40.5', '39.1', '38.4']);
 
     // Position agrees with order here, which is the point: both routes give the same
     // answer, and only the adjusted-EBITDA chart disagrees.
     const labels = inRow(page.items, 113.5, 950, 1090).filter((item) => /^FY\d{2}$/.test(item.text));
     const mapping = new Map(bindToAxisLabels(values, labels).map((b) => [b.value.text, b.label?.text ?? null]));
-    assert.equal(mapping.get('41.8'), 'FY20');
-    assert.equal(mapping.get('42.7'), 'FY21');
+    expect(mapping.get('41.8')).toBe('FY20');
+    expect(mapping.get('42.7')).toBe('FY21');
   });
 });
