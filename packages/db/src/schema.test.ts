@@ -189,9 +189,9 @@ describe.skipIf(!reachable)('schema invariants', () => {
     const vector = Array.from({ length: 768 }, () => 0.01);
     await db.insert(claimEmbeddings).values({
       claimId: claim!.id,
-      model: 'gemini-embedding-001',
+      model: 'Xenova/all-mpnet-base-v2',
       dimensions: 768,
-      taskType: 'SEMANTIC_SIMILARITY',
+      taskType: 'sentence-similarity',
       embeddedText: 'Delhivery Limited EBITDA consolidated FY2021',
       embedding: vector,
     });
@@ -204,7 +204,7 @@ describe.skipIf(!reachable)('schema invariants', () => {
         claimId: claim!.id,
         model: 'other-model',
         dimensions: 512,
-        taskType: 'SEMANTIC_SIMILARITY',
+        taskType: 'sentence-similarity',
         embeddedText: 'wrong width',
         embedding: Array.from({ length: 512 }, () => 0.01),
       }),

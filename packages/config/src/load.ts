@@ -3,10 +3,10 @@ import { z } from 'zod';
 /**
  * How the system obtains model responses.
  *
- * `live` calls Gemini. `saved-output` replays stored responses so the system can be
- * evaluated without a paid API key, which plan section 11.1 asks for. Derived from
- * whether a key is present rather than set independently, so the two cannot disagree,
- * and surfaced to the interface so saved output is always labelled as such.
+ * `live` calls OpenRouter. `saved-output` replays stored responses so the system can be
+ * evaluated without an API key, which plan section 11.1 asks for. Derived from whether a
+ * key is present rather than set independently, so the two cannot disagree, and surfaced
+ * to the interface so saved output is always labelled as such.
  */
 export type ModelMode = 'live' | 'saved-output';
 
@@ -55,12 +55,22 @@ const schema = z.object({
   STORAGE_DIR: nonEmpty('./storage'),
   PORT: intInRange(1, 65535, 3000),
 
-  GEMINI_API_KEY: optionalSecret,
-  LLM_MODEL: nonEmpty('gemini-2.5-flash'),
+  OPENROUTER_API_KEY: optionalSecret,
+  OPENROUTER_BASE_URL: nonEmpty('https://openrouter.ai/api/v1'),
+  /**
+   * The `:free` suffix is part of the model identity, not decoration. The paid and free
+   * routes are different deployments and need not behave identically, so the exact
+   * string is recorded on every run.
+   */
+  LLM_MODEL: nonEmpty('google/gemma-4-31b-it:free'),
 
-  EMBEDDING_MODEL: nonEmpty('gemini-embedding-001'),
-  // The plan fixes 768 for gemini-embedding-001 and requires the vector column to match.
-  // Changing this invalidates every stored vector, so it is bounded rather than free.
+  /**
+   * Embeddings run locally. OpenRouter's catalogue is chat completions only and contains
+   * no embedding models, so the retrieval side of plan 6.1 cannot use the same provider.
+   */
+  EMBEDDING_MODEL: nonEmpty('Xenova/all-mpnet-base-v2'),
+  // 768 keeps the existing vector(768) column valid. Changing this invalidates every
+  // stored vector, so it is bounded rather than free.
   EMBEDDING_DIMENSIONS: intInRange(1, 3072, 768),
 
   MAX_UPLOAD_MB: intInRange(1, 500, 50),
@@ -83,7 +93,8 @@ export interface Config {
   readonly port: number;
 
   readonly modelMode: ModelMode;
-  readonly geminiApiKey: string | undefined;
+  readonly openRouterApiKey: string | undefined;
+  readonly openRouterBaseUrl: string;
   readonly llmModel: string;
 
   readonly embeddingModel: string;
@@ -123,8 +134,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     storageDir: value.STORAGE_DIR,
     port: value.PORT,
 
-    modelMode: value.GEMINI_API_KEY === undefined ? 'saved-output' : 'live',
-    geminiApiKey: value.GEMINI_API_KEY,
+    modelMode: value.OPENROUTER_API_KEY === undefined ? 'saved-output' : 'live',
+    openRouterApiKey: value.OPENROUTER_API_KEY,
+    openRouterBaseUrl: value.OPENROUTER_BASE_URL,
     llmModel: value.LLM_MODEL,
 
     embeddingModel: value.EMBEDDING_MODEL,

@@ -59,7 +59,7 @@ services:
       STORAGE_DIR: /data/storage
       PORT: 3000
       # Deliberately unset: the API never holds the model key. Only the worker calls
-      # Gemini, per the plan's service boundaries.
+      # OpenRouter, per the plan's service boundaries.
     ports:
       - '3000:3000'
     volumes:
@@ -78,7 +78,7 @@ services:
       DATABASE_URL: postgres://superjoin:superjoin@postgres:5432/superjoin
       STORAGE_DIR: /data/storage
       # The only service given model access. Absent means saved-output mode.
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
     volumes:
       # The same volume the api mounts, at the same path.
       - pdf-storage:/data/storage

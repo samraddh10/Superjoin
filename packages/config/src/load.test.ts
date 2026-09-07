@@ -6,25 +6,26 @@ describe('loadConfig', () => {
   it('falls back to saved-output mode when no API key is set', () => {
     const config = loadConfig({});
     expect(config.modelMode).toBe('saved-output');
-    expect(config.geminiApiKey).toBeUndefined();
+    expect(config.openRouterApiKey).toBeUndefined();
   });
 
   it('treats a blank API key as absent rather than as a live credential', () => {
-    // A .env copied from .env.example leaves GEMINI_API_KEY set to the empty string.
+    // A .env copied from .env.example leaves OPENROUTER_API_KEY set to the empty string.
     // Reading that as live access would fail later with an opaque auth error.
-    expect(loadConfig({ GEMINI_API_KEY: '   ' }).modelMode).toBe('saved-output');
+    expect(loadConfig({ OPENROUTER_API_KEY: '   ' }).modelMode).toBe('saved-output');
   });
 
   it('reports live mode when a key is present', () => {
-    const config = loadConfig({ GEMINI_API_KEY: 'test-key' });
+    const config = loadConfig({ OPENROUTER_API_KEY: 'test-key' });
     expect(config.modelMode).toBe('live');
-    expect(config.geminiApiKey).toBe('test-key');
+    expect(config.openRouterApiKey).toBe('test-key');
   });
 
   it('applies every default named in plan section 1.3', () => {
     const config = loadConfig({});
-    expect(config.llmModel).toBe('gemini-2.5-flash');
-    expect(config.embeddingModel).toBe('gemini-embedding-001');
+    expect(config.llmModel).toBe('google/gemma-4-31b-it:free');
+    expect(config.embeddingModel).toBe('Xenova/all-mpnet-base-v2');
+    expect(config.openRouterBaseUrl).toBe('https://openrouter.ai/api/v1');
     expect(config.embeddingDimensions).toBe(768);
     expect(config.maxUploadMb).toBe(50);
     expect(config.maxPdfPages).toBe(300);

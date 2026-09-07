@@ -2,7 +2,7 @@
  * Processing worker.
  *
  * Consumes document jobs from pg-boss and runs them to a terminal stage. This is the only
- * process that will call Gemini, per the plan's service boundaries; the API never holds
+ * process that will call OpenRouter, per the plan's service boundaries; the API never holds
  * the model key.
  *
  * The pipeline stages themselves arrive in Phases 3 to 6. Until then the worker registers

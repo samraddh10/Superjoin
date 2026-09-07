@@ -93,3 +93,20 @@ export {
   type ProcessorOptions,
   type StageHandler,
 } from './processor.ts';
+
+export {
+  ModelError,
+  OpenRouterClient,
+  RecordingClient,
+  SavedOutputClient,
+  createModelClient,
+  extractJson,
+  imageContentPart,
+  requestFingerprint,
+  type ChatMessage,
+  type CompletionProvider,
+  type CompletionRequest,
+  type CompletionResult,
+  type ContentPart,
+  type ModelClientConfig,
+} from './model/index.ts';

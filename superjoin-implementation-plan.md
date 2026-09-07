@@ -10,29 +10,36 @@ Use Node.js 24 LTS with TypeScript in the API, worker and shared packages. The f
 |---|---|---|
 | Web interface | React + TypeScript + Vite; Tailwind and shadcn/ui optional | Upload documents, browse claims and relationships, inspect evidence |
 | HTTP API | [Fastify](https://fastify.dev/docs/latest/) | Upload, status and result endpoints; use @fastify/multipart for uploads |
-| Validation and contracts | Zod | Runtime validation and shared TypeScript types; export compatible JSON Schema for Fastify/OpenAPI and Gemini |
+| Validation and contracts | Zod | Runtime validation and shared TypeScript types; export compatible JSON Schema for Fastify/OpenAPI and the model's structured output |
 | Processing worker | Separate Node.js process using shared pipeline code | Parsing, extraction, normalization and comparisons |
 | Durable jobs | [pg-boss](https://github.com/timgit/pg-boss) | PostgreSQL-backed jobs, retries and concurrency control |
 | Database | PostgreSQL with JSONB and [pgvector](https://github.com/pgvector/pgvector) | Claims, evidence, relationships, embeddings and job state |
 | Database access | [Drizzle ORM + pg](https://orm.drizzle.team/docs/get-started/postgresql-new) | TypeScript schema, queries and transactions |
 | Migrations | Drizzle Kit | Generate and apply reviewed SQL migrations; manage pg-boss schema upgrades separately |
 | PDF text extraction | [unpdf + PDF.js](https://github.com/unjs/unpdf) | Page text and positioned text items; maintain page-level provenance |
-| Difficult-page processing | Gemini multimodal input | Interpret table-heavy, scanned or poorly extracted pages; retain original page evidence |
+| Difficult-page processing | Gemma 4 multimodal input via OpenRouter | Interpret table-heavy, scanned or poorly extracted pages; retain original page evidence |
 | PDF page rendering | unpdf + pdfjs-dist + @napi-rs/canvas | Render selected source pages for multimodal processing and inspection |
-| LLM | Gemini API through @google/genai | Structured fact extraction and evidence-based relationship classification |
-| Initial LLM model | gemini-2.5-flash, configurable | Baseline to evaluate; record exact model and prompt version |
-| Embeddings | gemini-embedding-001 through @google/genai | Embed short claim descriptions; use 768 dimensions and normalize vectors |
+| LLM | [OpenRouter](https://openrouter.ai/docs) chat completions API | Structured fact extraction and evidence-based relationship classification |
+| Initial LLM model | `google/gemma-4-31b-it:free`, configurable | Baseline to evaluate; record exact model and prompt version |
+| Embeddings | `@huggingface/transformers` run locally | Embed short claim descriptions; use 768 dimensions and normalize vectors. OpenRouter serves no embedding models, so this cannot go through the same provider |
 | Decimal arithmetic | [decimal.js](https://mikemcl.github.io/decimal.js/) | Precise unit conversion and numerical comparison; store PostgreSQL NUMERIC |
 | Evidence viewer | [PDF.js](https://mozilla.github.io/pdf.js/) | Display original PDFs and navigate to evidence pages |
 | Local PDF storage | Shared Docker volume | Original PDFs and derived parsing artifacts |
 | Local execution | Docker Compose | Run web, API, worker and PostgreSQL |
 | Verification | Vitest; Playwright for one browser smoke test if needed | Grounding, comparisons, recovery and upload workflow |
 
-The Gemini catalog lists the proposed extraction model. Keep it configurable and compare other models only when evaluation identifies a need. Structured output constrains JSON shape, not truth. Use Zod for post-response validation as well. [Model catalog](https://ai.google.dev/gemini-api/docs/models), [structured outputs](https://ai.google.dev/gemini-api/docs/structured-output).
+OpenRouter is a single OpenAI-compatible endpoint in front of many providers, which keeps the model choice a configuration value rather than a code dependency. Two free Gemma models are available and both accept image input, which the difficult-page route in section 3.1 requires:
 
-Use SEMANTIC_SIMILARITY for fact-to-fact embeddings with gemini-embedding-001. Set outputDimensionality to 768, normalize the result, and use a vector(768) column. Keep each embedded description below the model input limit. Record model, dimensions and task type; never compare vectors from different embedding models. Similarity only generates candidates, not agreement labels. [Gemini embeddings](https://ai.google.dev/gemini-api/docs/embeddings).
+| Model | Context | Max completion | Input | Notes |
+|---|---|---|---|---|
+| `google/gemma-4-31b-it:free` | 262,144 | 32,768 | text, image, video | Dense 31B. The default, chosen for transcription quality on financial tables |
+| `google/gemma-4-26b-a4b-it:free` | 262,144 | 32,768 | text, image, video | Mixture of experts, 4B active. Faster; the fallback if rate limits bind |
 
-Start with four services: web, api, worker and postgres. Only the worker calls Gemini. API and worker share code, database and PDF volume. pg-boss uses PostgreSQL, so Redis is unnecessary for this design. Make job handlers idempotent even with queue delivery guarantees: a retried external LLM call or partial application write can still repeat work.
+Both advertise `response_format`, `tools` and `seed`. Keep the model configurable and compare others only when evaluation identifies a need. Structured output constrains JSON shape, not truth, and a free endpoint may ignore the schema under load, so Zod post-response validation is mandatory rather than defensive. Record the exact model string including the `:free` suffix, since the paid and free routes are different deployments and may not behave identically. [OpenRouter models](https://openrouter.ai/docs/models), [structured outputs](https://openrouter.ai/docs/features/structured-outputs).
+
+Embeddings do not come from OpenRouter. Its catalogue is chat completions only, with no embedding models at all, so the retrieval side of section 6.1 has to be served another way. Run them locally with `@huggingface/transformers`, which section 9 already listed as an acceptable alternative. Use a symmetric sentence-similarity model at 768 dimensions so the existing `vector(768)` column is unchanged; `Xenova/all-mpnet-base-v2` is the default. Normalize the result. Keep each embedded description below the model input limit. Record model, dimensions and the task it was embedded for; never compare vectors from different embedding models. Similarity only generates candidates, not agreement labels. Benchmark memory, latency and candidate recall before accepting it, and re-embed the collection if the model changes. [Transformers.js](https://huggingface.co/docs/transformers.js/en/index).
+
+Start with four services: web, api, worker and postgres. Only the worker calls OpenRouter, and only the worker loads the local embedding model. API and worker share code, database and PDF volume. pg-boss uses PostgreSQL, so Redis is unnecessary for this design. Make job handlers idempotent even with queue delivery guarantees: a retried external LLM call or partial application write can still repeat work.
 
 ## Phase 0: scope and evidence reconnaissance
 
@@ -90,8 +97,8 @@ Keep the envelope stable but predicates and qualifiers extensible. A new fact ty
 
 Proposed initial values, to tune after measurement:
 
-- `DATABASE_URL`, `GEMINI_API_KEY`, `LLM_MODEL=gemini-2.5-flash`, `STORAGE_DIR`.
-- `EMBEDDING_MODEL=gemini-embedding-001`, `EMBEDDING_DIMENSIONS=768`.
+- `DATABASE_URL`, `OPENROUTER_API_KEY`, `OPENROUTER_BASE_URL=https://openrouter.ai/api/v1`, `LLM_MODEL=google/gemma-4-31b-it:free`, `STORAGE_DIR`.
+- `EMBEDDING_MODEL=Xenova/all-mpnet-base-v2`, `EMBEDDING_DIMENSIONS=768`.
 - `MAX_UPLOAD_MB=50`, `MAX_PDF_PAGES=300`.
 - `LLM_CONCURRENCY=2`, `CANDIDATE_TOP_K=15`.
 - A per-document token budget, application timeout and provider retry limit.
@@ -127,18 +134,18 @@ Use stages such as queued, parsing, extracting, normalizing, comparing, complete
 
 ## Phase 3: PDF parsing and evidence indexing
 
-### 3.1 Parse with unpdf and PDF.js; route difficult pages to Gemini
+### 3.1 Parse with unpdf and PDF.js; route difficult pages to the multimodal model
 
 - Validate the page count before extraction. Extract text page by page and retain positioned text items where available.
 - Reconstruct simple lines/blocks using positions; identify repeated headers and likely section boundaries. Preserve raw items as well as reconstructed text.
 - Plain PDF text extraction does not reliably reconstruct financial tables. Detect table-like layouts using positions, repeated numeric columns and headers; allow manual retry of any page through the visual route.
-- For table-heavy, scanned or garbled pages, render selected pages with unpdf using the official pdfjs-dist build and @napi-rs/canvas. Pass page images, their known physical page IDs, and available native text to Gemini.
+- For table-heavy, scanned or garbled pages, render selected pages with unpdf using the official pdfjs-dist build and @napi-rs/canvas. Pass page images, their known physical page IDs, and available native text to the model as an image content part.
 - Ask for structured table rows/cells with headings, units and footnotes. Store this as model-derived transcription, not independently verified source text.
-- Keep the original page image and raw text as evidence. A Gemini transcription cannot independently verify a claim extracted by the same model; use text cross-checks when available and mark visual-only support for review.
+- Keep the original page image and raw text as evidence. A model transcription cannot independently verify a claim extracted by the same model; use text cross-checks when available and mark visual-only support for review.
 - Cache parsing and visual transcriptions by document hash, page, parser/model version and options.
 - Run CPU-heavy parsing/rendering in bounded worker_threads or child processes when needed. A Promise timeout alone does not stop synchronous CPU work; terminate the isolated task when its execution limit is reached.
 
-unpdf documents text extraction and Node.js rendering. Gemini supports visual document understanding. This combined route requires evaluating table quality and explicitly preserving uncertain evidence. [unpdf documentation](https://github.com/unjs/unpdf), [Gemini document understanding](https://ai.google.dev/gemini-api/docs/document-processing).
+unpdf documents text extraction and Node.js rendering. Gemma 4 accepts image input for visual document understanding. This combined route requires evaluating table quality and explicitly preserving uncertain evidence, and a free model is more likely to need that scrutiny, not less. [unpdf documentation](https://github.com/unjs/unpdf), [OpenRouter image inputs](https://openrouter.ai/docs/features/images-and-pdfs).
 
 ### 3.2 Create stable source references
 
@@ -158,7 +165,7 @@ Assign each source block an ID. Store physical page index, original text or page
 
 ### 4.1 Define the extraction contract
 
-Use Zod contracts and a compatible JSON Schema with Gemini structured output through @google/genai; parse the response with Zod before accepting it. A claim should contain a subject, open predicate, original statement, typed value, units, period or as-of date, scope, qualifiers, and source-block IDs. Use null for unknown context instead of guessing. Preserve negative claims, ranges and approximate values.
+Use Zod contracts and a compatible JSON Schema with OpenRouter's `response_format` structured output; parse the response with Zod before accepting it, and treat a schema violation as a normal outcome to repair rather than an exception. A claim should contain a subject, open predicate, original statement, typed value, units, period or as-of date, scope, qualifiers, and source-block IDs. Use null for unknown context instead of guessing. Preserve negative claims, ranges and approximate values.
 
 Example fields, not a required domain schema:
 
@@ -251,7 +258,7 @@ Provide both claims, original evidence, neighboring context and deterministic ch
 | insufficient_context | Available evidence cannot resolve the comparison |
 | unrelated | Similar text concerns different assertions |
 
-Use the same baseline Gemini model initially. A larger-model retry is optional and should be justified by evaluation results.
+Use the same baseline Gemma model initially. A larger-model retry is optional and should be justified by evaluation results; OpenRouter makes that a configuration change rather than a new integration.
 
 ### 6.4 Preserve an audit trail
 
@@ -320,14 +327,14 @@ Freeze prompts and normalization rules before running the India macroeconomy set
 | 4 | Flexible schema handling | Predicate registry with descriptions, aliases and units; typed qualifier lists in JSONB | A new fact type appears without a SQL migration |
 | 5 | Many-document search | Batched embeddings, SQL indexes and pgvector HNSW if needed | Measure latency and candidate recall as corpus grows |
 | 6 | Human correction | Accept/reject a claim or relation; retain original output and recompute affected results | Review action changes displayed status with an audit trail |
-| 7 | Stronger parsing or reasoning | Tesseract.js OCR of rendered page images, or a stronger Gemini model only for flagged chunks/pairs | Show the baseline failure and measured improvement |
+| 7 | Stronger parsing or reasoning | Tesseract.js OCR of rendered page images, or a stronger OpenRouter model only for flagged chunks/pairs | Show the baseline failure and measured improvement |
 | 8 | Grounded question answering | Retrieve accepted claims and relationships; answer with evidence and conflicts | An answer cites the stored evidence and acknowledges disagreement |
 | 9 | Graph view | Client-side claim/entity relationship visualization using existing records | Clicking a graph edge opens the same evidence comparison |
 
 Optional Node.js alternatives:
 
 - Local OCR: tesseract.js on rendered page images. It does not directly accept PDF files, and OCR alone does not reconstruct table semantics. [Tesseract.js](https://github.com/naptha/tesseract.js).
-- Local embeddings: @huggingface/transformers with a compatible feature-extraction model. Benchmark memory, latency and candidate recall before replacing the API route; re-embed the collection with the chosen model and matching dimensions. [Transformers.js](https://huggingface.co/docs/transformers.js/en/index).
+- Hosted embeddings: a dedicated embeddings provider, if local embedding latency or recall proves inadequate. This is now the alternative rather than the default, since OpenRouter serves no embedding models and the local route is the baseline.
 - Queue dashboard: @pg-boss/dashboard for inspecting jobs if operational visibility is useful. Keep it separate from the reviewer-facing fact interface. [pg-boss](https://github.com/timgit/pg-boss).
 
 Each extension should address an observed limitation. A graph view and chat are optional presentation features; neither replaces the core comparison workflow.
@@ -346,7 +353,7 @@ For the assignment, Docker Compose is sufficient. If a hosted demo is valuable, 
 | PostgreSQL | Cloud SQL for PostgreSQL with pgvector | Managed application data and durable run state |
 | PDF files | Google Cloud Storage | Original PDFs and parsing artifacts |
 | Container images | Artifact Registry | Versioned API/worker image tags |
-| Secrets | Secret Manager | Gemini key and database configuration |
+| Secrets | Secret Manager | OpenRouter key and database configuration |
 | Logs | Cloud Logging | Structured logs with document and processing-run IDs |
 
 Official service references: [Cloudflare Vite deployment](https://developers.cloudflare.com/pages/framework-guides/deploy-a-vite3-project/), [Cloud Run execution models](https://docs.cloud.google.com/run/docs/overview/what-is-cloud-run), [Cloud Run Jobs](https://docs.cloud.google.com/run/docs/create-jobs), [Cloud Storage](https://docs.cloud.google.com/storage/docs/introduction), [Cloud SQL extensions](https://docs.cloud.google.com/sql/docs/postgres/extensions).
