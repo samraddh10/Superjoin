@@ -200,7 +200,15 @@ export async function processDocumentJob(
     pageCount: document.pageCount ?? 0,
   };
 
-  for (const handler of options.stages) {
+  // A job may ask for a subset. Filtering here rather than at the call site keeps the
+  // stage list one thing the worker builds once, and keeps the run's own bookkeeping —
+  // stage transitions, issues, finishRun — identical either way.
+  const stages =
+    job.stages === undefined
+      ? options.stages
+      : options.stages.filter((handler) => job.stages!.includes(handler.stage));
+
+  for (const handler of stages) {
     try {
       // The run says which stage it is in before the stage runs, so a progress poll
       // during a long extraction reports extraction rather than whatever ran before it.

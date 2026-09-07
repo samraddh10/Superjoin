@@ -21,6 +21,16 @@ export interface DocumentJob {
   readonly runId: string;
   readonly documentId: string;
   readonly collectionId: string;
+  /**
+   * Stages to run, when only some of them should be.
+   *
+   * Absent means the whole pipeline, which is what an upload wants. Naming a subset
+   * exists because the stages compete for one exhaustible resource: on a metered model,
+   * extraction spends the day's quota before comparison is reached, and re-running a
+   * document to get relationships spends it again on claims that are already stored.
+   * Re-comparing an already-extracted collection is the case this serves.
+   */
+  readonly stages?: readonly string[];
 }
 
 export interface QueuePolicy {

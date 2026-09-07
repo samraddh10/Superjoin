@@ -120,6 +120,26 @@ export async function registerRunRoutes(
    */
   app.post('/runs/:id/retry', async (request, reply) => {
     const runId = (request.params as { id: string }).id;
+
+    /**
+     * `?stages=comparing` re-runs only part of the pipeline.
+     *
+     * The stages compete for one exhaustible resource. On a metered model, extraction
+     * spends the quota before comparison is reached, and a plain retry spends it again
+     * re-extracting claims that are already stored — so relationships can never be the
+     * thing the remaining quota is spent on. Naming the stages makes that possible.
+     */
+    const requested = (request.query as { stages?: string }).stages;
+    const stages =
+      requested === undefined
+        ? undefined
+        : requested.split(',').map((name) => name.trim()).filter((name) => name !== '');
+
+    if (stages !== undefined && stages.length === 0) {
+      reply.code(400);
+      return { error: 'invalid_stages', message: 'stages was given but named nothing' };
+    }
+
     const found = await loadRun(runId);
 
     if (found === null) {
@@ -147,9 +167,9 @@ export async function registerRunRoutes(
           finishedAt: null,
           heartbeatAt: null,
           // Counters restart because the pipeline reprocesses from the beginning;
-          // leaving stale numbers would show progress that has not happened yet.
-          pagesProcessed: 0,
-          chunksProcessed: 0,
+          // leaving stale numbers would show progress that has not happened yet. A
+          // partial re-run does not reprocess those stages, so its counters stand.
+          ...(stages === undefined ? { pagesProcessed: 0, chunksProcessed: 0 } : {}),
         })
         .where(eq(processingRuns.id, runId));
 
@@ -157,10 +177,11 @@ export async function registerRunRoutes(
         runId,
         documentId: status.documentId,
         collectionId,
+        ...(stages !== undefined ? { stages } : {}),
       });
     });
 
     reply.code(202);
-    return { runId, stage: 'queued', queue: DOCUMENT_QUEUE };
+    return { runId, stage: 'queued', queue: DOCUMENT_QUEUE, ...(stages !== undefined ? { stages } : {}) };
   });
 }

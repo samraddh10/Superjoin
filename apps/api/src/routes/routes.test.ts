@@ -13,6 +13,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { loadConfig } from '@superjoin/config';
+import { processingRuns } from '@superjoin/db';
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { buildServer, type Server } from '../server.ts';
@@ -230,5 +232,56 @@ describe.skipIf(!reachable)('run status', () => {
     const response = await server.app.inject({ method: 'POST', url: `/runs/${runId}/retry` });
     expect(response.statusCode).toBe(409);
     expect(response.json().error).toBe('run_in_progress');
+  });
+});
+
+describe.skipIf(!reachable)('retrying only some stages', () => {
+  it('accepts a stage subset and reports it back', async () => {
+    const collectionId = await newCollection();
+    const body = multipartBody([
+      { field: 'file', filename: 'deck.pdf', content: await uniquePdf() },
+    ]);
+    const upload = await server.app.inject({
+      method: 'POST',
+      url: `/collections/${collectionId}/documents`,
+      ...body,
+    });
+    const runId = upload.json().results[0].runId as string;
+
+    // The run has to have stopped before a retry is allowed, whole or partial.
+    await server.database.db
+      .update(processingRuns)
+      .set({ stage: 'completed_with_issues' })
+      .where(eq(processingRuns.id, runId));
+
+    const response = await server.app.inject({
+      method: 'POST',
+      url: `/runs/${runId}/retry?stages=comparing`,
+    });
+
+    expect(response.statusCode).toBe(202);
+    // Extraction has already spent the model quota by the time comparison is reached, so
+    // re-running everything to get relationships spends it again on claims that are
+    // already stored. Naming the stage is what makes comparison the thing it is spent on.
+    expect(response.json().stages).toEqual(['comparing']);
+  });
+
+  it('refuses a stages parameter that names nothing', async () => {
+    const collectionId = await newCollection();
+    const body = multipartBody([
+      { field: 'file', filename: 'deck.pdf', content: await uniquePdf() },
+    ]);
+    const upload = await server.app.inject({
+      method: 'POST',
+      url: `/collections/${collectionId}/documents`,
+      ...body,
+    });
+    const runId = upload.json().results[0].runId as string;
+
+    const response = await server.app.inject({
+      method: 'POST',
+      url: `/runs/${runId}/retry?stages=`,
+    });
+    expect(response.statusCode).toBe(400);
   });
 });
