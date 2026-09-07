@@ -23,7 +23,7 @@ describe('loadConfig', () => {
 
   it('applies every default named in plan section 1.3', () => {
     const config = loadConfig({});
-    expect(config.llmModel).toBe('google/gemma-4-31b-it:free');
+    expect(config.llmModel).toBe('google/gemma-4-26b-a4b-it:free');
     expect(config.embeddingModel).toBe('Xenova/all-mpnet-base-v2');
     expect(config.openRouterBaseUrl).toBe('https://openrouter.ai/api/v1');
     expect(config.embeddingDimensions).toBe(768);

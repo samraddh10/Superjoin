@@ -62,7 +62,7 @@ const schema = z.object({
    * routes are different deployments and need not behave identically, so the exact
    * string is recorded on every run.
    */
-  LLM_MODEL: nonEmpty('google/gemma-4-31b-it:free'),
+  LLM_MODEL: nonEmpty('google/gemma-4-26b-a4b-it:free'),
 
   /**
    * Embeddings run locally. OpenRouter's catalogue is chat completions only and contains

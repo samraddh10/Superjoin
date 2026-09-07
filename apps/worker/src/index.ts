@@ -12,7 +12,10 @@
  * so.
  */
 
-import { loadConfig } from '@superjoin/config';
+// Before anything reads configuration. Node does not load .env on its own.
+import { loadConfig, loadDotEnvFile } from '@superjoin/config';
+
+loadDotEnvFile();
 import { closeDatabase, createDatabase } from '@superjoin/db';
 import {
   DOCUMENT_QUEUE,

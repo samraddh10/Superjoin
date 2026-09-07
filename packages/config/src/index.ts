@@ -10,6 +10,8 @@
  * must never be pulled into the web bundle.
  */
 
+export { loadDotEnvFile, type DotEnvResult } from './dotenv.ts';
+
 export {
   loadConfig,
   ConfigError,

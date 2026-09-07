@@ -5,7 +5,13 @@
  * from outside it; on the host that is equivalent to localhost.
  */
 
+import { loadDotEnvFile } from '@superjoin/config';
+
 import { buildServer } from './server.ts';
+
+// Before anything reads configuration. Node does not load .env on its own, and without
+// this the file a reviewer is told to create has no effect.
+loadDotEnvFile();
 
 const server = await buildServer();
 

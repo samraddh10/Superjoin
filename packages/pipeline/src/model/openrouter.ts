@@ -148,11 +148,16 @@ export class OpenRouterClient {
         if (!modelError.retryable || attempt === this.options.maxRetries) throw modelError;
 
         lastError = modelError;
-        const backoffMs = Math.min(30_000, 1000 * 2 ** attempt);
+
+        // Full jitter on the exponential backoff. The free tier draws on a pool shared
+        // with every other user of the model, so throttled callers are synchronised by
+        // construction; a deterministic backoff makes them all return together and
+        // collide again. Randomising the wait spreads them out.
+        const ceiling = Math.min(30_000, 1000 * 2 ** attempt);
         const waitMs =
           modelError.retryAfterSeconds !== undefined
             ? modelError.retryAfterSeconds * 1000
-            : backoffMs;
+            : Math.round(ceiling * (0.5 + Math.random() * 0.5));
         await sleep(waitMs);
       }
     }

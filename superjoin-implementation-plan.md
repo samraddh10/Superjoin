@@ -20,7 +20,7 @@ Use Node.js 24 LTS with TypeScript in the API, worker and shared packages. The f
 | Difficult-page processing | Gemma 4 multimodal input via OpenRouter | Interpret table-heavy, scanned or poorly extracted pages; retain original page evidence |
 | PDF page rendering | unpdf + pdfjs-dist + @napi-rs/canvas | Render selected source pages for multimodal processing and inspection |
 | LLM | [OpenRouter](https://openrouter.ai/docs) chat completions API | Structured fact extraction and evidence-based relationship classification |
-| Initial LLM model | `google/gemma-4-31b-it:free`, configurable | Baseline to evaluate; record exact model and prompt version |
+| Initial LLM model | `google/gemma-4-26b-a4b-it:free`, configurable | Baseline to evaluate; record exact model and prompt version |
 | Embeddings | `@huggingface/transformers` run locally | Embed short claim descriptions; use 768 dimensions and normalize vectors. OpenRouter serves no embedding models, so this cannot go through the same provider |
 | Decimal arithmetic | [decimal.js](https://mikemcl.github.io/decimal.js/) | Precise unit conversion and numerical comparison; store PostgreSQL NUMERIC |
 | Evidence viewer | [PDF.js](https://mozilla.github.io/pdf.js/) | Display original PDFs and navigate to evidence pages |
@@ -32,8 +32,16 @@ OpenRouter is a single OpenAI-compatible endpoint in front of many providers, wh
 
 | Model | Context | Max completion | Input | Notes |
 |---|---|---|---|---|
-| `google/gemma-4-31b-it:free` | 262,144 | 32,768 | text, image, video | Dense 31B. The default, chosen for transcription quality on financial tables |
-| `google/gemma-4-26b-a4b-it:free` | 262,144 | 32,768 | text, image, video | Mixture of experts, 4B active. Faster; the fallback if rate limits bind |
+| `google/gemma-4-26b-a4b-it:free` | 262,144 | 32,768 | text, image, video | Mixture of experts, 4B active. **The default**, on measured availability |
+| `google/gemma-4-31b-it:free` | 262,144 | 32,768 | text, image, video | Dense 31B. Likely stronger, but unusable on the shared pool |
+
+The default is chosen on availability rather than size, and the measurement is worth
+recording: probed six times each on the shared free pool, the dense 31B returned 429 on
+six of six while the mixture-of-experts model answered five of six at about 1.2 seconds.
+Both draw on one upstream Google AI Studio pool, so throttling remains common either way
+and the pipeline must treat a 429 as an ordinary event rather than an error. Attaching a
+personal Google AI Studio key at OpenRouter's integrations page moves requests onto that
+key's own quota and is the practical remedy; it changes no code.
 
 Both advertise `response_format`, `tools` and `seed`. Keep the model configurable and compare others only when evaluation identifies a need. Structured output constrains JSON shape, not truth, and a free endpoint may ignore the schema under load, so Zod post-response validation is mandatory rather than defensive. Record the exact model string including the `:free` suffix, since the paid and free routes are different deployments and may not behave identically. [OpenRouter models](https://openrouter.ai/docs/models), [structured outputs](https://openrouter.ai/docs/features/structured-outputs).
 
@@ -97,7 +105,7 @@ Keep the envelope stable but predicates and qualifiers extensible. A new fact ty
 
 Proposed initial values, to tune after measurement:
 
-- `DATABASE_URL`, `OPENROUTER_API_KEY`, `OPENROUTER_BASE_URL=https://openrouter.ai/api/v1`, `LLM_MODEL=google/gemma-4-31b-it:free`, `STORAGE_DIR`.
+- `DATABASE_URL`, `OPENROUTER_API_KEY`, `OPENROUTER_BASE_URL=https://openrouter.ai/api/v1`, `LLM_MODEL=google/gemma-4-26b-a4b-it:free`, `STORAGE_DIR`.
 - `EMBEDDING_MODEL=Xenova/all-mpnet-base-v2`, `EMBEDDING_DIMENSIONS=768`.
 - `MAX_UPLOAD_MB=50`, `MAX_PDF_PAGES=300`.
 - `LLM_CONCURRENCY=2`, `CANDIDATE_TOP_K=15`.
