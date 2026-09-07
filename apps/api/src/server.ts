@@ -21,6 +21,9 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { PgBoss } from 'pg-boss';
 
 import { registerCollectionRoutes } from './routes/collections.ts';
+import { registerDocumentRoutes } from './routes/documents.ts';
+import { registerFactRoutes } from './routes/facts.ts';
+import { registerRelationshipRoutes } from './routes/relationships.ts';
 import { DEFAULT_STALLED_AFTER_MS, registerRunRoutes } from './routes/runs.ts';
 
 /**
@@ -89,6 +92,9 @@ export async function buildServer(
 
   await registerCollectionRoutes(app, { ingestion, maxUploadBytes });
   await registerRunRoutes(app, { ingestion, stalledAfterMs: DEFAULT_STALLED_AFTER_MS });
+  await registerDocumentRoutes(app, { ingestion, stalledAfterMs: DEFAULT_STALLED_AFTER_MS });
+  await registerFactRoutes(app, { ingestion });
+  await registerRelationshipRoutes(app, { ingestion });
 
   /**
    * Liveness: the process is up and serving. Deliberately does no dependency work, so a
