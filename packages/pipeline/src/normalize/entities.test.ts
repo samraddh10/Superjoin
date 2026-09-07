@@ -6,10 +6,58 @@
  * allowed to merge without a model being asked.
  */
 
-import { describe, expect, it } from 'vitest';
+import { randomUUID } from 'node:crypto';
 
-import { normalizeEntityLabel } from './entities.ts';
+import { afterAll, describe, expect, it } from 'vitest';
+
+import { closeDatabase, collections, createDatabase, type DatabaseHandle } from '@superjoin/db';
+
+import type { CompletionProvider, CompletionResult } from '../model/index.ts';
+import { normalizeEntityLabel, resolveEntity } from './entities.ts';
 import { factGroupId } from './stage.ts';
+
+const connectionString =
+  process.env['DATABASE_URL'] ?? 'postgres://superjoin:superjoin@localhost:55432/superjoin';
+
+const database: DatabaseHandle = createDatabase(connectionString);
+const reachable = await database.pool
+  .query('select 1')
+  .then(() => true)
+  .catch(() => false);
+
+if (!reachable) await closeDatabase(database);
+afterAll(async () => {
+  if (reachable) await closeDatabase(database);
+});
+
+async function seedCollection(): Promise<{ collectionId: string }> {
+  const [row] = await database.db
+    .insert(collections)
+    .values({ name: `entities-${randomUUID()}` })
+    .returning({ id: collections.id });
+  return { collectionId: row!.id };
+}
+
+/** Records every subject put to it, so a test can count the calls rather than infer them. */
+function stubClient(
+  asked: string[],
+  verdict: { same: boolean; reason: string },
+): CompletionProvider {
+  return {
+    mode: 'live',
+    model: 'stub/adjudicator',
+    async complete(request): Promise<CompletionResult> {
+      asked.push(JSON.stringify(request.messages).slice(0, 80));
+      return {
+        text: JSON.stringify(verdict),
+        servedByModel: 'stub/adjudicator',
+        promptTokens: 0,
+        completionTokens: 0,
+        latencyMs: 0,
+      };
+    },
+  };
+}
 
 describe('normalizeEntityLabel', () => {
   it('treats a legal form as spelling', () => {
@@ -69,5 +117,101 @@ describe('factGroupId', () => {
     expect(factGroupId('col', 'ent', 'revenue', '{}')).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
     );
+  });
+});
+
+/**
+ * How many questions one subject may ask the adjudicator.
+ *
+ * The cap is a performance property with a correctness edge, so it is pinned here. Each
+ * candidate is a sequential model call, and on a rate-limited free tier each can sit in
+ * retry backoff for tens of seconds. Asking about three tripled that for a subject where
+ * the first answer is the informative one, because candidates arrive ordered by lexical
+ * closeness — the second and third are the least likely to be the same entity.
+ *
+ * Observed before the cap: a prospectus naming 146 distinct subjects normalized at about
+ * one claim every 45 seconds, hours for a single document.
+ */
+describe.skipIf(!reachable)('adjudication budget', () => {
+  it('asks about one candidate by default, not three', async () => {
+    const { collectionId } = await seedCollection();
+    const asked: string[] = [];
+    const client = stubClient(asked, { same: false, reason: 'different companies' });
+
+    // Three lexically similar names already exist, so all three are candidates.
+    for (const name of ['Acme Logistics Alpha', 'Acme Logistics Beta', 'Acme Logistics Gamma']) {
+      await resolveEntity(database.db, { collectionId, subject: name });
+    }
+
+    const resolution = await resolveEntity(database.db, {
+      collectionId,
+      subject: 'Acme Logistics Delta',
+      client,
+    });
+
+    expect(asked).toHaveLength(1);
+    expect(resolution.adjudications).toBe(1);
+    // Nothing was confirmed, so the subject stays its own entity, per plan 5.3.
+    expect(resolution.method).toBe('created');
+  });
+
+  it('honours a larger budget when one is given', async () => {
+    const { collectionId } = await seedCollection();
+    const asked: string[] = [];
+    const client = stubClient(asked, { same: false, reason: 'different companies' });
+
+    for (const name of ['Beta Freight One', 'Beta Freight Two', 'Beta Freight Three']) {
+      await resolveEntity(database.db, { collectionId, subject: name });
+    }
+
+    const resolution = await resolveEntity(database.db, {
+      collectionId,
+      subject: 'Beta Freight Four',
+      client,
+      maxAdjudications: 3,
+    });
+
+    expect(asked.length).toBeGreaterThan(1);
+    expect(resolution.adjudications).toBe(asked.length);
+  });
+
+  it('asks nothing when the budget is zero, and still resolves', async () => {
+    const { collectionId } = await seedCollection();
+    const asked: string[] = [];
+    const client = stubClient(asked, { same: true, reason: 'the same company' });
+
+    await resolveEntity(database.db, { collectionId, subject: 'Gamma Cargo One' });
+
+    const resolution = await resolveEntity(database.db, {
+      collectionId,
+      subject: 'Gamma Cargo Two',
+      client,
+      maxAdjudications: 0,
+    });
+
+    // A zero budget is the same situation as having no model at all: the subject is not
+    // merged on a guess, it is left separate and said to be separate.
+    expect(asked).toHaveLength(0);
+    expect(resolution.adjudications).toBe(0);
+    expect(resolution.method).toBe('created');
+  });
+
+  it('spends nothing when the name matches exactly', async () => {
+    const { collectionId } = await seedCollection();
+    const asked: string[] = [];
+    const client = stubClient(asked, { same: true, reason: 'the same company' });
+
+    await resolveEntity(database.db, { collectionId, subject: 'Delta Shipping Limited' });
+    // Exact match after the legal suffix is stripped, which needs no model at all — this
+    // is why withholding the client costs so little.
+    const resolution = await resolveEntity(database.db, {
+      collectionId,
+      subject: 'Delta Shipping',
+      client,
+    });
+
+    expect(asked).toHaveLength(0);
+    expect(resolution.adjudications).toBe(0);
+    expect(resolution.method).toBe('exact');
   });
 });

@@ -106,6 +106,8 @@ export interface EntityResolution {
   readonly reason: string;
   /** Candidates that were considered and rejected, kept so a miss is reviewable. */
   readonly rejectedCandidates: readonly string[];
+  /** Model calls this resolution actually spent, so a caller can budget them. */
+  readonly adjudications: number;
 }
 
 export interface EntityCandidate {
@@ -133,6 +135,16 @@ export interface ResolveEntityOptions {
   readonly evidence?: readonly string[];
   /** The block that states the alias, so an accepted match is source-backed. */
   readonly sourceBlockId?: string;
+  /**
+   * How many candidates this subject may put to the adjudicator. Default one.
+   *
+   * Each is a sequential model call, and on a rate-limited free tier each can sit in
+   * retry backoff for tens of seconds. Asking about three candidates tripled that for a
+   * subject where the first answer is almost always the informative one: candidates are
+   * already ordered by lexical closeness, so the second and third are the ones least
+   * likely to be the same entity.
+   */
+  readonly maxAdjudications?: number;
 }
 
 /**
@@ -167,6 +179,7 @@ export async function resolveEntity(
           ? `matched after removing the legal form (${strippedSuffixes.join(' ')})`
           : 'the normalized name already exists in this collection',
       rejectedCandidates: [],
+      adjudications: 0,
     };
   }
 
@@ -189,6 +202,7 @@ export async function resolveEntity(
       canonicalLabel: alias.canonicalLabel,
       reason: 'a recorded alias points at this entity',
       rejectedCandidates: [],
+      adjudications: 0,
     };
   }
 
@@ -196,9 +210,12 @@ export async function resolveEntity(
   // the collection's own labels; both are suggestions, and neither decides anything.
   const candidates = await gatherCandidates(db, options, label);
   const rejected: string[] = [];
+  const budget = options.maxAdjudications ?? 1;
+  let adjudications = 0;
 
-  if (candidates.length > 0 && options.client !== undefined) {
-    for (const candidate of candidates.slice(0, 3)) {
+  if (candidates.length > 0 && options.client !== undefined && budget > 0) {
+    for (const candidate of candidates.slice(0, budget)) {
+      adjudications += 1;
       const verdict = await adjudicate(options.client, options.subject, candidate, options.evidence ?? []);
 
       if (verdict.same) {
@@ -209,6 +226,7 @@ export async function resolveEntity(
           canonicalLabel: candidate.canonicalLabel,
           reason: verdict.reason,
           rejectedCandidates: rejected,
+          adjudications,
         };
       }
 
@@ -233,6 +251,7 @@ export async function resolveEntity(
         ? 'similar names were found and none was confirmed, so this subject stays separate'
         : 'no existing entity matched this subject',
     rejectedCandidates: rejected,
+    adjudications,
   };
 }
 
