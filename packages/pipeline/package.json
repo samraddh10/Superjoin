@@ -16,6 +16,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "@napi-rs/canvas": "^1.0.8",
     "@superjoin/db": "0.1.0",
     "decimal.js": "10.6.0",
