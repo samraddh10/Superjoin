@@ -9,6 +9,7 @@ build/
 storage/
 .cache/
 starter-datasets.zip
+.devenv/*
 
 # TypeScript build info
 *.tsbuildinfo
