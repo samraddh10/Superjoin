@@ -10,7 +10,7 @@ services:
   postgres:
     # pgvector is required by plan section 6.1 for candidate retrieval. Taking the
     # extension as part of the image avoids a build step in the migration path.
-    image: pgvector/pgvector:pg17
+    image: docker.io/pgvector/pgvector:pg17
     environment:
       POSTGRES_USER: superjoin
       POSTGRES_PASSWORD: superjoin
