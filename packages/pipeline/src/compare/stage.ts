@@ -73,6 +73,16 @@ const DEFAULTS = {
   maxConsecutiveFailures: 4,
 } as const;
 
+/**
+ * How long to wait out a rate limit, and how many times.
+ *
+ * Sized for a per-minute quota, which is the shape free tiers use. Two pauses is enough to
+ * cross a minute boundary twice; a third would mean the limit is per day, and waiting for
+ * tomorrow inside a job is a stalled worker rather than patience.
+ */
+const COOLDOWN_MS = 45_000;
+const COOLDOWN_ATTEMPTS = 2;
+
 export interface ComparisonSummary {
   readonly pairsConsidered: number;
   readonly exactPairs: number;
@@ -172,6 +182,55 @@ function fromChecks(checks: DeterministicChecks, extraUncertainty: readonly stri
   };
 }
 
+/**
+ * How likely a pair is to be one of the four cases worth reporting.
+ *
+ * Read off the deterministic checks, which are already computed and cost nothing. Higher
+ * is asked first. The weights are ordinal rather than calibrated: what matters is that a
+ * pair which could be a corroboration outranks one that could only ever be `unrelated`,
+ * not the precise gap between them.
+ */
+export function promiseOf(checks: DeterministicChecks): number {
+  // A pair the gate refuses never reaches the classifier, so its order is irrelevant; it
+  // sorts last so it cannot displace a pair that would have been asked.
+  if (!checks.worthComparing) return -1;
+
+  let score = 0;
+
+  // Two documents saying the same thing is the entire point. One document disagreeing
+  // with itself is a real finding but not the comparison this system is asked to make.
+  if (!checks.sameDocument) score += 8;
+
+  // Naming the same entity and the same measure is what makes a pair comparable at all.
+  if (checks.entityMatch === 'same') score += 6;
+  if (checks.predicate.relation === 'same') score += 5;
+  else if (checks.predicate.relation === 'modifier_variant') score += 2;
+
+  // A conclusion drawn from a claim held for review is provisional, so those pairs are
+  // worth asking about only once the confident ones have been.
+  if (checks.bothAccepted) score += 4;
+
+  // Both sides carrying a figure is what lets agreement or conflict be established rather
+  // than discussed. A pair with no numbers can still be corroborated, so this ranks it
+  // lower rather than excluding it.
+  if (checks.value !== null) {
+    score += 3;
+    // Agreement is a corroboration; disagreement is a conflict or a reconciliation. Either
+    // is one of the four cases, and both beat a pair whose figures cannot be compared.
+    if (checks.value.agreement === 'agree' || checks.value.agreement === 'disagree') score += 3;
+  }
+
+  // Evidence read twice is not two sources, and a corroboration resting on it is
+  // downgraded later anyway — so it is a poor use of a call while others are unasked.
+  if (checks.sharedSourceBlocks.length > 0) score -= 5;
+
+  // A clean power-of-ten gap usually means a scale word was misread, which is worth the
+  // classifier's attention rather than a silent deterministic pass.
+  if (checks.scaleRatio !== null) score += 2;
+
+  return score;
+}
+
 export async function compareDocument(
   context: ProcessingContext,
   options: ComparisonStageOptions = {},
@@ -205,6 +264,10 @@ export async function compareDocument(
   let promptTokens = 0;
   let completionTokens = 0;
   let consecutive = 0;
+  /** Consecutive failures that were all throttles, which a wait can clear. */
+  let throttledInARow = 0;
+  let cooldownsLeft = COOLDOWN_ATTEMPTS;
+  let considered = 0;
   let stoppedEarly = false;
 
   if (candidates.pairs.length === 0) {
@@ -246,8 +309,34 @@ export async function compareDocument(
     .where(eq(processingRuns.id, context.job.runId))
     .limit(1);
 
-  for (const pair of candidates.pairs) {
-    const checks = runDeterministicChecks(pair.a, pair.b);
+  /**
+   * Decide the order before spending anything, most promising pair first.
+   *
+   * The classifier is the scarcest resource in this system: on a metered model the budget
+   * runs out long before the candidates do, and whatever is left over falls back to the
+   * deterministic answer, which abstains by design. So the order the pairs are visited in
+   * decides which of the four cases the run is able to find at all.
+   *
+   * Retrieval order is not that order. It is the order pgvector returned neighbours in,
+   * which ranks by how a claim *reads*, and a run that took the first fifty of those spent
+   * its entire budget on pairs that mostly turned out to be unrelated.
+   *
+   * `promise` therefore scores what the deterministic checks already know. A pair of
+   * accepted claims about one entity, one measure and two documents, each carrying a
+   * figure, is the shape every one of corroborates, contradicts and reconciled_by_context
+   * takes; a pair missing any of those cannot be any of them. Scoring is not deciding —
+   * the classifier still reaches its own verdict, and this only changes which questions it
+   * is asked while it can still be asked any.
+   */
+  const scored = candidates.pairs
+    .map((pair) => {
+      const checks = runDeterministicChecks(pair.a, pair.b);
+      return { pair, checks, promise: promiseOf(checks) };
+    })
+    .sort((a, b) => b.promise - a.promise);
+
+  for (const { pair, checks } of scored) {
+    considered += 1;
     let verdict: Verdict;
 
     if (!checks.worthComparing) {
@@ -295,14 +384,44 @@ export async function compareDocument(
           message: `pair ${pair.a.id} / ${pair.b.id}: ${(error as Error).message.slice(0, 300)}`,
         });
 
+        if (throttled) throttledInARow += 1;
+        else throttledInARow = 0;
+
         if (consecutive >= maxConsecutive && !stoppedEarly) {
-          stoppedEarly = true;
-          await recordIssue(db, context.job.runId, {
-            stage: 'comparing',
-            failureKind: 'classification_abandoned',
-            failureClass: 'transient',
-            message: `stopped asking the classifier after ${consecutive} consecutive failures; the remaining pairs were labelled from the deterministic checks alone`,
-          });
+          /**
+           * Being rate-limited is not the same as being unable to continue.
+           *
+           * A provider that is down stays down, and giving up is right. A free tier that
+           * refuses this minute will accept the next one, and giving up there throws away
+           * the rest of the collection over a wait — which is what happened: four quick
+           * 429s ended a stage with sixteen hundred pairs still unasked, and every one of
+           * them fell back to an answer that abstains by design.
+           *
+           * So a run of failures that were *all* throttles buys a cooldown instead of an
+           * ending, twice. Bounded, because a third pause on a quota that resets tomorrow
+           * is a stalled worker rather than patience, and each attempt has already been
+           * through the client's own retries and their backoff before reaching here.
+           */
+          if (throttledInARow >= consecutive && cooldownsLeft > 0) {
+            cooldownsLeft -= 1;
+            await recordIssue(db, context.job.runId, {
+              stage: 'comparing',
+              failureKind: 'classification_cooldown',
+              failureClass: 'transient',
+              message: `throttled ${consecutive} times in a row; pausing ${Math.round(COOLDOWN_MS / 1000)}s before asking again rather than abandoning ${scored.length - considered} remaining pairs`,
+            });
+            await new Promise((resolve) => setTimeout(resolve, COOLDOWN_MS));
+            consecutive = 0;
+            throttledInARow = 0;
+          } else {
+            stoppedEarly = true;
+            await recordIssue(db, context.job.runId, {
+              stage: 'comparing',
+              failureKind: 'classification_abandoned',
+              failureClass: 'transient',
+              message: `stopped asking the classifier after ${consecutive} consecutive failures; the remaining pairs were labelled from the deterministic checks alone`,
+            });
+          }
         }
 
         verdict = fromChecks(checks, [

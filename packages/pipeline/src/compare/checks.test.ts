@@ -10,6 +10,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { deterministicLabel, runDeterministicChecks, type ComparableClaim } from './checks.ts';
+import { promiseOf } from './stage.ts';
 
 const claim = (overrides: Partial<ComparableClaim> = {}): ComparableClaim => ({
   id: 'claim-a',
@@ -235,5 +236,74 @@ describe('placeholder subjects across documents', () => {
     const b = { ...dated('doc-2', '8,142 Cr'), subject: 'Delhivery Limited', predicate: 'revenue' };
     // This is the pair corroboration depends on; the guard must not touch it.
     expect(runDeterministicChecks(a, b).worthComparing).toBe(true);
+  });
+});
+
+/**
+ * Which pairs get asked first when the budget will not cover all of them.
+ *
+ * On a metered model the classifier runs out long before the candidates do, and everything
+ * left over falls back to the deterministic answer, which abstains by design. So the order
+ * decides which of the four cases a run can find at all — a run that spent its first fifty
+ * calls on pgvector's reading-similarity order found no corroboration in the whole
+ * collection, because none of the fifty was a pair that could have been one.
+ */
+describe('ordering pairs by promise', () => {
+  const other = (overrides: Partial<ComparableClaim> = {}): ComparableClaim =>
+    claim({ id: 'claim-b', documentId: 'doc-2', ...overrides });
+
+  const promiseFor = (a: ComparableClaim, b: ComparableClaim): number =>
+    promiseOf(runDeterministicChecks(a, b));
+
+  it('ranks a pair that could be a corroboration above one that could not', () => {
+    // Same entity, same measure, two documents, both with figures: the shape every one of
+    // corroborates, contradicts and reconciled_by_context takes.
+    const promising = promiseFor(claim(), other());
+    // Same entity, but no figure on either side, so nothing can be established.
+    const vague = promiseFor(
+      claim({ numericValue: null, rawValue: null }),
+      other({ numericValue: null, rawValue: null }),
+    );
+
+    expect(promising).toBeGreaterThan(vague);
+  });
+
+  it('ranks a cross-document pair above the same comparison inside one document', () => {
+    const across = promiseFor(claim(), other());
+    const within = promiseFor(claim(), other({ documentId: 'doc-1' }));
+    expect(across).toBeGreaterThan(within);
+  });
+
+  it('ranks two accepted claims above a pair resting on one held for review', () => {
+    const confident = promiseFor(claim(), other());
+    const provisional = promiseFor(claim(), other({ status: 'needs_review' }));
+    expect(confident).toBeGreaterThan(provisional);
+  });
+
+  it('demotes a pair whose claims read the same passage twice', () => {
+    // The shared fixture cites block-1 on both sides, so independence has to be arranged
+    // explicitly rather than assumed from the defaults.
+    const independent = promiseFor(
+      claim({ sourceBlockIds: ['block-1'] }),
+      other({ sourceBlockIds: ['block-2'] }),
+    );
+    // One passage read twice is not two sources, and a corroboration built on it is
+    // downgraded later anyway — so it is a poor use of a call while others are unasked.
+    const shared = promiseFor(
+      claim({ sourceBlockIds: ['block-1'] }),
+      other({ sourceBlockIds: ['block-1'] }),
+    );
+    expect(independent).toBeGreaterThan(shared);
+  });
+
+  it('sorts a pair the gate refuses below every pair that would be asked', () => {
+    // Different entities: refused, so its order cannot matter — but it must not displace a
+    // pair the classifier would otherwise have reached.
+    const refused = promiseFor(claim(), other({ entityId: 'entity-2' }));
+    const weakest = promiseFor(
+      claim({ numericValue: null, rawValue: null, status: 'needs_review' }),
+      other({ numericValue: null, rawValue: null, status: 'needs_review', documentId: 'doc-1' }),
+    );
+    expect(refused).toBeLessThan(weakest);
   });
 });
