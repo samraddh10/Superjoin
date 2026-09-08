@@ -36,6 +36,8 @@ import {
 } from '@superjoin/db';
 import {
   LocalEmbeddingProvider,
+  ModelError,
+  ProcessingError,
   compareDocument,
   extractDocument,
   findCandidates,
@@ -364,24 +366,33 @@ describe.skipIf(!reachable)('extraction, normalization and comparison', () => {
     expect(stored).toHaveLength(1);
   }, 60_000);
 
-  it('abstains rather than guessing when no classifier is configured', async () => {
-    // The deterministic fallback. It reaches `corroborates` here because the pair is two
-    // independent accepted claims agreeing in the same context, and it would abstain for
-    // anything less clear-cut; it can never reach a contradiction.
+  it('fails the run when the classifier cannot be reached, rather than labelling anyway', async () => {
+    // The checks had already failed to settle this pair — that is why it was sent to the
+    // model. A label written in the model's absence would be a guess stored in the same
+    // shape as a considered answer, and no reader could tell the two apart.
     await database.db.delete(relationships).where(eq(relationships.collectionId, collectionId));
 
-    const summary = await compareDocument(contextFor(report), {});
+    const unavailable: CompletionProvider = {
+      model: 'stub/unavailable',
+      complete() {
+        return Promise.reject(new ModelError('quota exhausted', 'provider_rate_limited', true));
+      },
+    };
 
-    expect(summary.classifiedDeterministically).toBe(1);
-    expect(summary.classifiedByModel).toBe(0);
+    const failure = await compareDocument(contextFor(report), { client: unavailable }).catch(
+      (error: unknown) => error,
+    );
 
-    const [stored] = await database.db
-      .select({ label: relationships.label, method: relationships.method })
+    expect(failure).toBeInstanceOf(ProcessingError);
+    expect((failure as ProcessingError).stage).toBe('comparing');
+    expect((failure as ProcessingError).failureClass).toBe('transient');
+
+    const stored = await database.db
+      .select({ id: relationships.id })
       .from(relationships)
       .where(eq(relationships.collectionId, collectionId));
 
-    expect(stored?.method).toBe('deterministic');
-    expect(['corroborates', 'insufficient_context']).toContain(stored?.label);
+    expect(stored).toHaveLength(0);
   }, 60_000);
 
   it('runs the pgvector search when an embedding model is available', async () => {

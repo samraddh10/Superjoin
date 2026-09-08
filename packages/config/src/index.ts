@@ -14,7 +14,7 @@ export { loadDotEnvFile, type DotEnvResult } from './dotenv.ts';
 
 export {
   loadConfig,
+  requireOpenRouterKey,
   ConfigError,
   type Config,
-  type ModelMode,
 } from './load.ts';

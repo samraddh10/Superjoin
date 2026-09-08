@@ -2,9 +2,9 @@
  * Loading `.env` into the process environment.
  *
  * Node does not read `.env` on its own, so without this the file the README tells a
- * reviewer to create has no effect and the system silently stays in saved-output mode.
- * That failure is quiet in the worst way: everything starts, nothing errors, and the
- * only symptom is that no model call is ever made.
+ * reviewer to create has no effect and the key it holds is never seen. The worker then
+ * refuses to start, which is the intended outcome for a missing key but a confusing one
+ * when the key is sitting in a file three lines away.
  *
  * Called explicitly from the API and worker entry points rather than as a side effect of
  * `loadConfig`, so tests that pass an environment object keep getting exactly what they

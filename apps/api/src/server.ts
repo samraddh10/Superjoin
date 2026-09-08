@@ -107,7 +107,7 @@ export async function buildServer(
    * distinction is visible to a caller and not only in the body.
    */
   app.get('/ready', async (_request, reply) => {
-    const readiness = await checkReadiness('api', database, config.storageDir, config.modelMode);
+    const readiness = await checkReadiness('api', database, config.storageDir);
     reply.code(readiness.ok ? 200 : 503);
     return readiness;
   });

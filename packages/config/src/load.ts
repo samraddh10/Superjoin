@@ -1,15 +1,5 @@
 import { z } from 'zod';
 
-/**
- * How the system obtains model responses.
- *
- * `live` calls OpenRouter. `saved-output` replays stored responses so the system can be
- * evaluated without an API key, which plan section 11.1 asks for. Derived from whether a
- * key is present rather than set independently, so the two cannot disagree, and surfaced
- * to the interface so saved output is always labelled as such.
- */
-export type ModelMode = 'live' | 'saved-output';
-
 export class ConfigError extends Error {
   override readonly name = 'ConfigError';
 }
@@ -38,9 +28,16 @@ const nonEmpty = (fallback: string) =>
     .transform((raw) => (raw === undefined || raw.trim() === '' ? fallback : raw.trim()));
 
 /**
- * An absent key and a key set to the empty string mean the same thing: no model access.
- * The empty string is the state a `.env` copied from `.env.example` is actually in, and
- * reading it as a live credential fails later with an opaque authentication error.
+ * A credential that may be absent here and required elsewhere.
+ *
+ * An absent key and a key set to the empty string mean the same thing — the empty string
+ * is the state a `.env` copied from `.env.example` is actually in — and both resolve to
+ * `undefined` so that a single check covers them.
+ *
+ * The key is not rejected at this layer because not every process needs one. The API
+ * never calls the model and never holds the key; only the worker does, and it demands
+ * one at startup through `requireOpenRouterKey`. Rejecting here would put a model
+ * credential in the way of a service that has no business holding it.
  */
 const optionalSecret = z
   .string()
@@ -92,7 +89,6 @@ export interface Config {
   readonly storageDir: string;
   readonly port: number;
 
-  readonly modelMode: ModelMode;
   readonly openRouterApiKey: string | undefined;
   readonly openRouterBaseUrl: string;
   readonly llmModel: string;
@@ -115,7 +111,7 @@ export interface Config {
  * Resolves configuration from an environment, defaulting to `process.env`.
  *
  * Taking the environment as a parameter keeps this testable without mutating global
- * state, which matters because the saved-output branch has to be exercised directly.
+ * state.
  */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const parsed = schema.safeParse(env);
@@ -134,7 +130,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     storageDir: value.STORAGE_DIR,
     port: value.PORT,
 
-    modelMode: value.OPENROUTER_API_KEY === undefined ? 'saved-output' : 'live',
     openRouterApiKey: value.OPENROUTER_API_KEY,
     openRouterBaseUrl: value.OPENROUTER_BASE_URL,
     llmModel: value.LLM_MODEL,
@@ -152,4 +147,22 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     llmTimeoutMs: value.LLM_TIMEOUT_MS,
     providerMaxRetries: value.PROVIDER_MAX_RETRIES,
   };
+}
+
+/**
+ * The model key, or a refusal to continue without one.
+ *
+ * Called by the process that actually reaches the provider, at startup rather than at
+ * the first completion: a worker that begins consuming jobs and only then discovers it
+ * has no credential has already claimed work it cannot do, and every one of those jobs
+ * pays a full retry ladder to learn the same thing.
+ */
+export function requireOpenRouterKey(config: Config): string {
+  if (config.openRouterApiKey === undefined) {
+    throw new ConfigError(
+      'OPENROUTER_API_KEY is required: this service calls the model on every document, and there is no offline mode to fall back to',
+    );
+  }
+
+  return config.openRouterApiKey;
 }

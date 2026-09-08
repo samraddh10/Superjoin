@@ -24,7 +24,6 @@ export interface Readiness {
   readonly service: string;
   readonly database: DependencyStatus & { readonly migrationsApplied: boolean };
   readonly storage: DependencyStatus & { readonly root: string };
-  readonly modelMode: string;
 }
 
 /**
@@ -78,7 +77,6 @@ export async function checkReadiness(
   service: string,
   handle: DatabaseHandle,
   storageDir: string,
-  modelMode: string,
 ): Promise<Readiness> {
   const [database, storage]: [Awaited<ReturnType<typeof checkDatabase>>, StorageHealth] =
     await Promise.all([checkDatabase(handle), checkStorageHealth(storageDir)]);
@@ -88,6 +86,5 @@ export async function checkReadiness(
     service,
     database,
     storage: { ok: storage.writable, detail: storage.detail, root: storage.root },
-    modelMode,
   };
 }

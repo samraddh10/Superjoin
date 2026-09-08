@@ -27,7 +27,7 @@ import {
 import type { DatabaseHandle } from '@superjoin/db';
 
 import { ModelError, type CompletionProvider, type CompletionResult } from '../model/index.ts';
-import type { ProcessingContext } from '../processor.ts';
+import { ProcessingError, type ProcessingContext } from '../processor.ts';
 import { contentHash, documentStorageKey, objectExists, writeObject } from '../storage.ts';
 import { parseDocument } from './stage.ts';
 import { renderTranscription } from './transcribe.ts';
@@ -52,7 +52,6 @@ let documentHash: string;
 
 /** A client that always refuses, the way a saturated free pool does. */
 const alwaysThrottled: CompletionProvider = {
-  mode: 'live',
   model: 'stub/throttled',
   async complete(): Promise<CompletionResult> {
     throw new ModelError('429 rate-limited upstream', 'provider_rate_limited', true);
@@ -61,7 +60,6 @@ const alwaysThrottled: CompletionProvider = {
 
 /** A client that answers with a valid transcription. */
 const answers: CompletionProvider = {
-  mode: 'live',
   model: 'stub/answers',
   async complete(): Promise<CompletionResult> {
     return {
@@ -147,22 +145,26 @@ afterAll(async () => {
 });
 
 describe.skipIf(!reachable)('when the model is unavailable', () => {
-  it('stops asking after repeated throttling instead of grinding on', async () => {
-    const summary = await transcribeDocument(context, {
+  it('fails the run rather than leaving the page read from a text layer it distrusts', async () => {
+    // The page reached this stage because its native text was judged unusable. Returning
+    // a summary here would report the document as parsed with that page silently unread.
+    const failure = await transcribeDocument(context, {
       client: alwaysThrottled,
       documentHash: () => documentHash,
-      maxConsecutiveFailures: 2,
-    });
+    }).catch((error: unknown) => error);
 
-    expect(summary.pagesConsidered).toBeGreaterThan(0);
-    expect(summary.pagesThrottled).toBe(2);
-    expect(summary.stoppedEarly).toBe(true);
-    // Once the pool is refusing, continuing to ask buys nothing and delays the pipeline.
-    expect(summary.pagesTranscribed).toBe(0);
+    expect(failure).toBeInstanceOf(ProcessingError);
+    const error = failure as ProcessingError;
+    expect(error.stage).toBe('parsing');
+    // Throttling is worth retrying; the queue decides when, not this stage.
+    expect(error.failureClass).toBe('transient');
+    expect(error.failureKind).toBe('provider_rate_limited');
+    expect(error.physicalPage).not.toBeUndefined();
   }, 180_000);
 
   it('leaves the document usable, with its native-text blocks intact', async () => {
-    // The point of not throwing: a throttled page costs that page, not the document.
+    // The run failed, but nothing already written was rolled back: the retry starts from
+    // stored native text rather than from a blank document.
     const blocks = await database.db
       .select()
       .from(sourceBlocks)
@@ -183,9 +185,8 @@ describe.skipIf(!reachable)('when the model is unavailable', () => {
     expect(throttles[0]?.isTransient).toBe(true);
     expect(throttles[0]?.physicalPage).not.toBeNull();
 
-    // And it says how much was skipped, rather than leaving that to be inferred.
-    const abandoned = issues.find((issue) => issue.failureKind === 'visual_route_abandoned');
-    expect(abandoned?.message).toMatch(/were not attempted/);
+    // Recorded before the throw, so the failed run says which page it died on.
+    expect(throttles[0]?.message).toMatch(/physical page \d+/);
   });
 });
 

@@ -14,11 +14,10 @@
  */
 
 // Before anything reads configuration. Node does not load .env on its own.
-import { loadConfig, loadDotEnvFile } from '@superjoin/config';
+import { loadConfig, loadDotEnvFile, requireOpenRouterKey } from '@superjoin/config';
 
 loadDotEnvFile();
 import { closeDatabase, createDatabase } from '@superjoin/db';
-import { join } from 'node:path';
 
 import { documents } from '@superjoin/db';
 import {
@@ -60,10 +59,21 @@ function log(level: 'info' | 'error', message: string, fields: Record<string, un
 /**
  * The model client. Only the worker holds one, per the plan's service boundaries.
  *
- * Responses are recorded under the storage volume, so the saved-output mode plan 11.1
- * asks for can replay whatever a live run produced.
+ * Live OpenRouter access is the only mode there is, so a missing key stops the process
+ * here rather than at the first document. Whether the key *works* is settled by the
+ * first call; a run whose calls fail is reported failed, never completed on substituted
+ * answers.
  */
-const modelClient = createModelClient(config, join(config.storageDir, 'model-cache'));
+const openRouterApiKey = ((): string => {
+  try {
+    return requireOpenRouterKey(config);
+  } catch (error) {
+    log('error', 'not configured', { detail: (error as Error).message });
+    process.exit(1);
+  }
+})();
+
+const modelClient = createModelClient({ ...config, openRouterApiKey });
 
 /**
  * The embedding model, loaded lazily on first use.
@@ -134,7 +144,7 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
 
 await ensureStorage(config.storageDir);
 
-const readiness = await checkReadiness('worker', database, config.storageDir, config.modelMode);
+const readiness = await checkReadiness('worker', database, config.storageDir);
 
 if (!readiness.ok) {
   // Exiting non-zero rather than idling. A worker that cannot reach its database or its
@@ -191,10 +201,8 @@ await boss.work<DocumentJob>(
 log('info', 'ready', {
   queue: DOCUMENT_QUEUE,
   stages: STAGES.length,
-  modelClientMode: modelClient.mode,
   storageRoot: readiness.storage.root,
   migrationsApplied: readiness.database.migrationsApplied,
-  modelMode: config.modelMode,
   llmModel: config.llmModel,
   llmConcurrency: config.llmConcurrency,
   embeddingModel: config.embeddingModel,

@@ -29,7 +29,7 @@ import { claims, processingRuns, sourceBlocks } from '@superjoin/db';
 
 import { ModelError, type CompletionProvider } from '../model/index.ts';
 import { chunkSourceBlocks, type Chunk, type ChunkSourceBlock } from '../parsing/chunk.ts';
-import type { ProcessingContext, StageHandler } from '../processor.ts';
+import { ProcessingError, type ProcessingContext, type StageHandler } from '../processor.ts';
 import { recordIssue, recordProgress } from '../run-state.ts';
 import { loadRegistry, registerPredicates, renderRegistry } from '../normalize/registry.ts';
 import { EXTRACTION_PROMPT_VERSION } from './contract.ts';
@@ -283,22 +283,31 @@ export async function extractDocument(
         consecutive += 1;
 
         const modelError = error instanceof ModelError ? error : null;
-        const throttled = modelError?.kind === 'provider_rate_limited';
 
-        // Recorded, not thrown. The chunk's blocks are already stored as evidence and
-        // the other chunks keep their claims; failing the document here would discard
-        // work that succeeded because one call did not.
         await recordIssue(db, context.job.runId, {
           stage: 'extracting',
-          failureKind: throttled
-            ? 'extraction_throttled'
-            : (modelError?.kind ?? 'extraction_failed'),
-          failureClass: throttled ? 'transient' : 'permanent',
+          failureKind: modelError?.kind ?? 'extraction_failed',
+          failureClass: modelError !== null && modelError.retryable ? 'transient' : 'permanent',
           message: `chunk ${chunk.index} (page ${chunk.physicalPages.join(', ')}): ${(error as Error).message.slice(0, 300)}`,
           ...(chunk.physicalPages[0] !== undefined
             ? { physicalPage: chunk.physicalPages[0] }
             : {}),
         });
+
+        // A provider that did not answer fails the document. Keeping the other chunks'
+        // claims would report a document as extracted when part of it was never read,
+        // and nothing downstream could tell the difference. A chunk that failed for its
+        // own reasons — a malformed response from a provider that did reply — still
+        // costs only that chunk.
+        if (modelError !== null) {
+          throw new ProcessingError(
+            `extraction call failed on chunk ${chunk.index}: ${modelError.message}`,
+            modelError.kind,
+            modelError.retryable ? 'transient' : 'permanent',
+            'extracting',
+            chunk.physicalPages[0],
+          );
+        }
       }
 
       await recordProgress(db, context.job.runId, {

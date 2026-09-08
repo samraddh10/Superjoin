@@ -1,24 +1,36 @@
 import { describe, expect, it } from 'vitest';
 
-import { ConfigError, loadConfig } from './load.ts';
+import { ConfigError, loadConfig, requireOpenRouterKey } from './load.ts';
 
 describe('loadConfig', () => {
-  it('falls back to saved-output mode when no API key is set', () => {
+  it('loads without an API key, so a service that never calls the model can start', () => {
+    // The API is that service: it holds no model credential by design, and it reaches
+    // this same loader through createDatabase.
     const config = loadConfig({});
-    expect(config.modelMode).toBe('saved-output');
     expect(config.openRouterApiKey).toBeUndefined();
   });
 
   it('treats a blank API key as absent rather than as a live credential', () => {
     // A .env copied from .env.example leaves OPENROUTER_API_KEY set to the empty string.
     // Reading that as live access would fail later with an opaque auth error.
-    expect(loadConfig({ OPENROUTER_API_KEY: '   ' }).modelMode).toBe('saved-output');
+    expect(loadConfig({ OPENROUTER_API_KEY: '   ' }).openRouterApiKey).toBeUndefined();
   });
 
-  it('reports live mode when a key is present', () => {
-    const config = loadConfig({ OPENROUTER_API_KEY: 'test-key' });
-    expect(config.modelMode).toBe('live');
-    expect(config.openRouterApiKey).toBe('test-key');
+  it('reads a key that is present', () => {
+    expect(loadConfig({ OPENROUTER_API_KEY: 'test-key' }).openRouterApiKey).toBe('test-key');
+  });
+
+  it('refuses to hand out a key that is not there', () => {
+    // There is no offline mode behind this: a caller asking for the key is a caller that
+    // is about to reach the provider, and it must not be told to proceed without one.
+    expect(() => requireOpenRouterKey(loadConfig({}))).toThrow(ConfigError);
+    expect(() => requireOpenRouterKey(loadConfig({ OPENROUTER_API_KEY: '  ' }))).toThrow(
+      /OPENROUTER_API_KEY is required/,
+    );
+  });
+
+  it('hands out the key when one is configured', () => {
+    expect(requireOpenRouterKey(loadConfig({ OPENROUTER_API_KEY: 'test-key' }))).toBe('test-key');
   });
 
   it('applies every default named in plan section 1.3', () => {

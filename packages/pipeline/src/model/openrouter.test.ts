@@ -6,10 +6,6 @@
  * in something else. None of them can be exercised against the real service on demand.
  */
 
-import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -18,7 +14,6 @@ import {
   extractJson,
   imageContentPart,
 } from './openrouter.ts';
-import { SavedOutputClient, requestFingerprint } from './index.ts';
 
 const OPTIONS = {
   apiKey: 'test-key',
@@ -248,59 +243,5 @@ describe('imageContentPart', () => {
     expect(part.type).toBe('image_url');
     if (part.type !== 'image_url') return;
     expect(part.image_url.url).toMatch(/^data:image\/png;base64,/);
-  });
-});
-
-describe('saved-output mode', () => {
-  let cacheDir: string;
-
-  beforeEach(async () => {
-    cacheDir = await mkdtemp(join(tmpdir(), 'superjoin-model-'));
-  });
-
-  afterEach(async () => {
-    await rm(cacheDir, { recursive: true, force: true });
-  });
-
-  it('replays a recorded response without touching the network', async () => {
-    const client = new SavedOutputClient('google/gemma-4-31b-it:free', cacheDir);
-    const request = { messages: [{ role: 'user' as const, content: 'hello' }] };
-    const fingerprint = requestFingerprint('google/gemma-4-31b-it:free', request);
-    const path = join(cacheDir, fingerprint.slice(0, 2), `${fingerprint}.json`);
-
-    await mkdir(dirname(path), { recursive: true });
-    await writeFile(
-      path,
-      JSON.stringify({
-        text: '{"replayed":true}',
-        servedByModel: 'google/gemma-4-31b-it:free',
-        promptTokens: 1,
-        completionTokens: 2,
-        latencyMs: 3,
-      }),
-    );
-
-    const result = await client.complete(request);
-    expect(result.text).toBe('{"replayed":true}');
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it('fails loudly on a miss instead of returning nothing', async () => {
-    // A silent empty answer would look like a document that contained no facts.
-    const client = new SavedOutputClient('google/gemma-4-31b-it:free', cacheDir);
-
-    const error = await client
-      .complete({ messages: [{ role: 'user', content: 'unrecorded' }] })
-      .catch((e: unknown) => e as ModelError);
-
-    expect((error as ModelError).kind).toBe('saved_output_missing');
-    expect((error as ModelError).message).toContain('OPENROUTER_API_KEY');
-  });
-
-  it('keys a replay on the exact request', async () => {
-    // A looser key would answer a new question with an old answer.
-    const a = requestFingerprint('m', { messages: [{ role: 'user', content: 'page 1' }] });
-    const b = requestFingerprint('m', { messages: [{ role: 'user', content: 'page 2' }] });
-    expect(a).not.toBe(b);
   });
 });

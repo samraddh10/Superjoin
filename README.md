@@ -33,7 +33,9 @@ and worker start, so there is no separate setup step.
 
 ### The model key
 
-Only the worker talks to a model. Put a key in `.env`:
+Only the worker talks to a model, and it will not start without a key — every document is
+processed by calling the model, and there is no offline mode behind it. Put a key in
+`.env`:
 
 ```
 OPENROUTER_API_KEY=<your key>
@@ -64,13 +66,14 @@ curl http://localhost:3000/ready     # {"ok":true,...}
 docker compose logs -f worker        # watch documents process
 ```
 
-The API reporting `"modelMode":"saved-output"` is correct: it deliberately has no model
-access. Only the worker does.
+The API holds no model key by design and never calls the provider; only the worker does.
+A worker that exits immediately with `not configured` is saying the key never reached it —
+check that `.env` exists and that `OPENROUTER_API_KEY` is set in it.
 
 ### Tests and evaluation
 
 ```bash
-npm install && npm test              # 422 tests; needs postgres up
+npm install && npm test              # 443 tests; needs postgres up
 npx tsx --conditions development evaluation/src/run.ts "<collection name>"
 ```
 

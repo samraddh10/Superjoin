@@ -97,12 +97,9 @@ export {
 export {
   ModelError,
   OpenRouterClient,
-  RecordingClient,
-  SavedOutputClient,
   createModelClient,
   extractJson,
   imageContentPart,
-  requestFingerprint,
   type ChatMessage,
   type CompletionProvider,
   type CompletionRequest,

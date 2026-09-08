@@ -88,7 +88,8 @@ services:
     environment:
       DATABASE_URL: postgres://superjoin:superjoin@postgres:5432/superjoin
       STORAGE_DIR: /data/storage
-      # The only service given model access. Absent means saved-output mode.
+      # The only service given model access, and it will not start without it: there is
+      # no offline mode to fall back to.
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       # Passed through so the model stays a configuration value rather than a rebuild.
       # The endpoint is OpenAI-compatible, so this can point at OpenRouter or straight at

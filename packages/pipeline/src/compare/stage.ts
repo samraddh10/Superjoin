@@ -15,11 +15,12 @@
  * independent accepted claims whose contexts match exactly and whose figures agree after
  * a recorded conversion.
  *
- * A pair the model cannot be asked about — throttled, or no key at all — falls back to
- * `insufficient_context` rather than to a guess, and the row says `deterministic` in its
- * method with the reason attached. Abstention that is visibly abstention is the point:
- * plan 6.3 makes it a correct answer, and plan 6.4 forbids dressing an unavailable
- * classifier as a considered one.
+ * A pair the model cannot be asked about ends the run. The checks that sent the pair to
+ * the model had already failed to settle it, so any label written in the model's absence
+ * would be a guess in the shape of a considered answer — which is what plan 6.4 forbids.
+ * Transient causes (throttling, timeouts) are raised as transient so the queue retries
+ * with backoff; a refused key is permanent and fails at once. `insufficient_context`
+ * remains a verdict the model itself may reach, and only it.
  */
 
 import { and, eq, inArray } from 'drizzle-orm';
@@ -29,7 +30,7 @@ import { claimEvidence, processingRuns, relationships, sourceBlocks } from '@sup
 
 import type { EmbeddingProvider } from '../embedding/index.ts';
 import { ModelError, type CompletionProvider } from '../model/index.ts';
-import type { ProcessingContext, StageHandler } from '../processor.ts';
+import { ProcessingError, type ProcessingContext, type StageHandler } from '../processor.ts';
 import { recordIssue, recordProgress } from '../run-state.ts';
 import { findCandidates, type CandidatePair } from './candidates.ts';
 import {
@@ -55,22 +56,18 @@ import {
 export const COMPARISON_METHOD_VERSION = `${CHECKS_VERSION}+${RELATIONSHIP_PROMPT_VERSION}`;
 
 export interface ComparisonStageOptions {
-  /** Absent means every pair falls back to the deterministic answer. */
-  readonly client?: CompletionProvider;
+  readonly client: CompletionProvider;
   /** Absent means candidate retrieval is exact matching only. */
   readonly embeddings?: EmbeddingProvider;
   /** Semantic candidates per claim. Sourced from CANDIDATE_TOP_K. */
   readonly topK?: number;
   /** Tokens this stage may spend on one document. */
   readonly tokenBudget?: number;
-  /** Give up on the classifier after this many consecutive failures. */
-  readonly maxConsecutiveFailures?: number;
 }
 
 const DEFAULTS = {
   topK: 15,
   tokenBudget: 400_000,
-  maxConsecutiveFailures: 4,
 } as const;
 
 export interface ComparisonSummary {
@@ -84,7 +81,6 @@ export interface ComparisonSummary {
   readonly semanticRetrievalAvailable: boolean;
   readonly promptTokens: number;
   readonly completionTokens: number;
-  readonly stoppedEarly: boolean;
 }
 
 /**
@@ -174,11 +170,10 @@ function fromChecks(checks: DeterministicChecks, extraUncertainty: readonly stri
 
 export async function compareDocument(
   context: ProcessingContext,
-  options: ComparisonStageOptions = {},
+  options: ComparisonStageOptions,
 ): Promise<ComparisonSummary> {
   const { db } = context.database;
   const tokenBudget = options.tokenBudget ?? DEFAULTS.tokenBudget;
-  const maxConsecutive = options.maxConsecutiveFailures ?? DEFAULTS.maxConsecutiveFailures;
 
   const candidates = await findCandidates(db, {
     collectionId: context.job.collectionId,
@@ -204,8 +199,6 @@ export async function compareDocument(
   let written = 0;
   let promptTokens = 0;
   let completionTokens = 0;
-  let consecutive = 0;
-  let stoppedEarly = false;
 
   if (candidates.pairs.length === 0) {
     return {
@@ -219,7 +212,6 @@ export async function compareDocument(
       semanticRetrievalAvailable: candidates.embedding.available,
       promptTokens: 0,
       completionTokens: 0,
-      stoppedEarly: false,
     };
   }
 
@@ -254,9 +246,7 @@ export async function compareDocument(
       // Dismissed by name alone. The only label reachable here is `unrelated`, which
       // asserts that no comparison was made rather than that one failed.
       verdict = fromChecks(checks, []);
-    } else if (options.client === undefined) {
-      verdict = fromChecks(checks, ['no classifier was configured for this run']);
-    } else if (stoppedEarly || promptTokens + completionTokens >= tokenBudget) {
+    } else if (promptTokens + completionTokens >= tokenBudget) {
       verdict = fromChecks(checks, ['the classification budget for this document was exhausted']);
     } else {
       try {
@@ -282,32 +272,27 @@ export async function compareDocument(
 
         promptTokens += classified.promptTokens;
         completionTokens += classified.completionTokens;
-        consecutive = 0;
       } catch (error) {
-        consecutive += 1;
+        // A pair the classifier could not answer is not labelled from the checks alone.
+        // The checks were never sufficient — that is why the pair reached the model — so
+        // a verdict written here would be a guess wearing the same shape as a considered
+        // answer. The run fails instead, and says why.
         const modelError = error instanceof ModelError ? error : null;
-        const throttled = modelError?.kind === 'provider_rate_limited';
+        const retryable = modelError?.retryable ?? true;
 
         await recordIssue(db, context.job.runId, {
           stage: 'comparing',
-          failureKind: throttled ? 'classification_throttled' : 'classification_failed',
-          failureClass: throttled ? 'transient' : 'permanent',
+          failureKind: modelError?.kind ?? 'classification_failed',
+          failureClass: retryable ? 'transient' : 'permanent',
           message: `pair ${pair.a.id} / ${pair.b.id}: ${(error as Error).message.slice(0, 300)}`,
         });
 
-        if (consecutive >= maxConsecutive && !stoppedEarly) {
-          stoppedEarly = true;
-          await recordIssue(db, context.job.runId, {
-            stage: 'comparing',
-            failureKind: 'classification_abandoned',
-            failureClass: 'transient',
-            message: `stopped asking the classifier after ${consecutive} consecutive failures; the remaining pairs were labelled from the deterministic checks alone`,
-          });
-        }
-
-        verdict = fromChecks(checks, [
-          `the classifier could not be reached for this pair (${modelError?.kind ?? 'unexpected_error'})`,
-        ]);
+        throw new ProcessingError(
+          `classifier unavailable for pair ${pair.a.id} / ${pair.b.id}: ${(error as Error).message}`,
+          modelError?.kind ?? 'classification_failed',
+          retryable ? 'transient' : 'permanent',
+          'comparing',
+        );
       }
     }
 
@@ -346,7 +331,6 @@ export async function compareDocument(
     semanticRetrievalAvailable: candidates.embedding.available,
     promptTokens,
     completionTokens,
-    stoppedEarly,
   };
 }
 
@@ -411,7 +395,7 @@ async function writeRelationship(
   return false;
 }
 
-export function createComparisonStage(options: ComparisonStageOptions = {}): StageHandler {
+export function createComparisonStage(options: ComparisonStageOptions): StageHandler {
   return {
     stage: 'comparing',
     async run(context) {
