@@ -25,12 +25,13 @@
 import { asc, eq } from 'drizzle-orm';
 
 import type { Database } from '@superjoin/db';
-import { processingRuns, sourceBlocks } from '@superjoin/db';
+import { claims, processingRuns, sourceBlocks } from '@superjoin/db';
 
 import { ModelError, type CompletionProvider } from '../model/index.ts';
 import { chunkSourceBlocks, type Chunk, type ChunkSourceBlock } from '../parsing/chunk.ts';
 import type { ProcessingContext, StageHandler } from '../processor.ts';
 import { recordIssue, recordProgress } from '../run-state.ts';
+import { loadRegistry, registerPredicates, renderRegistry } from '../normalize/registry.ts';
 import { EXTRACTION_PROMPT_VERSION } from './contract.ts';
 import { extractChunk } from './extract.ts';
 import { persistClaim } from './persist.ts';
@@ -161,6 +162,16 @@ export async function extractDocument(
 
   const chunks = chunkSourceBlocks(selectExtractionBlocks(blocks));
 
+  /**
+   * What this collection already calls things, read once and shown to every chunk.
+   *
+   * Read before extraction rather than per chunk so one document sees a stable
+   * vocabulary: letting it grow mid-document would have later chunks reusing names
+   * earlier chunks of the same file had just coined, which is how a near-duplicate
+   * becomes entrenched instead of being caught as an alias afterwards.
+   */
+  const vocabulary = renderRegistry(await loadRegistry(db, context.job.collectionId));
+
   await recordProgress(db, context.job.runId, { chunksTotal: chunks.length, chunksProcessed: 0 });
 
   // Recorded before any call, so a run interrupted halfway still says which prompt and
@@ -209,7 +220,7 @@ export async function extractDocument(
   };
 
   const runOne = async (chunk: Chunk): Promise<void> => {
-    const result = await extractChunk(chunk, { client: options.client });
+    const result = await extractChunk(chunk, { client: options.client, vocabulary });
 
     promptTokens += result.promptTokens;
     completionTokens += result.completionTokens;
@@ -314,6 +325,26 @@ export async function extractDocument(
     claimsExtracted: extracted,
     claimsAccepted: accepted,
   });
+
+  /**
+   * Record what this document actually used, so the next one can reuse it.
+   *
+   * After the loop rather than during it, for the same reason the vocabulary is read
+   * before: a name coined in chunk 3 should not be offered back in chunk 4 of the same
+   * document, where it has not yet been seen often enough to be worth entrenching.
+   */
+  const used = await db
+    .selectDistinct({ predicate: claims.predicate, unit: claims.unit })
+    .from(claims)
+    .where(eq(claims.documentId, context.job.documentId));
+
+  if (used.length > 0) {
+    await registerPredicates(
+      db,
+      context.job.collectionId,
+      used.map((row) => ({ name: row.predicate, unit: row.unit })),
+    );
+  }
 
   return {
     chunksTotal: chunks.length,

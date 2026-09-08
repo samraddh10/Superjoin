@@ -13,6 +13,7 @@ export * from './collections.ts';
 export * from './processing.ts';
 export * from './sources.ts';
 export * from './entities.ts';
+export * from './predicates.ts';
 export * from './claims.ts';
 export * from './relationships.ts';
 export * from './issues.ts';

@@ -268,13 +268,34 @@ export async function findCandidates(
     });
   };
 
-  // Exact: same subject, same predicate name, regardless of period, scope or rank. This
-  // channel is what guarantees the reconciliation cases survive retrieval, since those
-  // are exactly the pairs whose contexts differ.
+  /**
+   * Exact: same subject, and a predicate naming a related measure — regardless of period,
+   * scope or rank. This channel is what guarantees the reconciliation cases survive
+   * retrieval, since those are exactly the pairs whose contexts differ.
+   *
+   * It matched on identical predicate names until measurement showed that finds almost
+   * nothing. Extraction names predicates freely, as plan 4.2 requires, and the cost is
+   * that it names the same measure differently in every document: one collection produced
+   * 1,053 distinct predicates from 1,991 claims, with `revenue`, `revenue_amount`,
+   * `total_revenues` and `total_revenue_from_customers` all present separately. Requiring
+   * identity left two candidate pairs in the whole collection, and corroboration — which
+   * needs the same measure found in two documents — could not be reached at all.
+   *
+   * So the channel now accepts any predicate relation that is not positively ruled out.
+   * `related_form` means "both concern revenue but are not the same measure", which is a
+   * reason to look rather than a match; `explicitly_distinct` still blocks the pair,
+   * because revenue from operations must never be equated with total income. Widening
+   * retrieval is safe in a way that widening a verdict would not be: the deterministic
+   * gate and the classifier still decide, and this only changes what they are shown.
+   *
+   * The subject must still match exactly, which is what keeps this bounded — only 29
+   * entities in that collection appear in more than one document at all.
+   */
   for (const claim of mine) {
     for (const other of others) {
       if (!sameSubject(claim, other)) continue;
-      if (predicateRelation(claim.predicate, other.predicate).relation !== 'same') continue;
+      const relation = predicateRelation(claim.predicate, other.predicate).relation;
+      if (relation === 'unrelated' || relation === 'explicitly_distinct') continue;
       add(claim, other, 'exact', null);
     }
   }

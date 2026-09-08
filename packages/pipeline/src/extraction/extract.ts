@@ -31,6 +31,13 @@ export interface ExtractChunkOptions {
   readonly maxTokens?: number;
   /** Whether a schema failure may be sent back once for correction. */
   readonly allowRepair?: boolean;
+  /**
+   * The collection's predicate vocabulary, rendered for the prompt.
+   *
+   * Absent for the first document in a collection, which has nothing to reuse yet and is
+   * the one that establishes the names the rest will follow.
+   */
+  readonly vocabulary?: string;
 }
 
 export interface ChunkExtraction {
@@ -55,7 +62,7 @@ export async function extractChunk(
   chunk: Chunk,
   options: ExtractChunkOptions,
 ): Promise<ChunkExtraction> {
-  const messages: ChatMessage[] = buildExtractionMessages(chunk);
+  const messages: ChatMessage[] = buildExtractionMessages(chunk, options.vocabulary ?? '');
 
   const first = await options.client.complete({
     messages,

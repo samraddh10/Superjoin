@@ -52,8 +52,30 @@ const SYSTEM_PROMPT = [
  * resolves every citation against the chunk's own mapping rather than trusting one;
  * saying so here simply reduces how often that happens.
  */
-export function buildExtractionMessages(chunk: Chunk): ChatMessage[] {
+export function buildExtractionMessages(chunk: Chunk, vocabulary = ''): ChatMessage[] {
   const handles = chunk.blockRefs.map((entry) => entry.ref).join(', ');
+
+  /**
+   * The collection's existing predicate names, when it has any.
+   *
+   * Plan 4.2's requirement for open predicates stands: this asks for reuse where a name
+   * fits and explicitly permits a new one where none does. Without it, extraction names
+   * the same measure differently in every document — one collection produced 1,053
+   * distinct predicates from 1,991 claims, leaving only two (entity, predicate)
+   * combinations shared across documents and nothing for corroboration to match on.
+   */
+  const vocabularySection =
+    vocabulary === ''
+      ? []
+      : [
+          'This collection already uses these predicate names:',
+          vocabulary,
+          '',
+          'Reuse one of those names whenever it names the same measure, even if this',
+          'document words it differently. Invent a new name only when none of them fits —',
+          'a genuinely new kind of fact is expected and welcome.',
+          '',
+        ];
 
   return [
     { role: 'system', content: SYSTEM_PROMPT },
@@ -63,6 +85,7 @@ export function buildExtractionMessages(chunk: Chunk): ChatMessage[] {
         'The passage below is one section of a document.',
         `Cite only these block handles: ${handles === '' ? '(none)' : handles}.`,
         '',
+        ...vocabularySection,
         '--- passage begins ---',
         chunk.text,
         '--- passage ends ---',
