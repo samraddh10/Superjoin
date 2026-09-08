@@ -1,8 +1,8 @@
 /**
  * The extraction contract.
  *
- * Plan section 4.1: one Zod schema, a JSON Schema compatible with it sent as OpenRouter's
- * `response_format`, and the reply parsed with Zod before anything is believed. The two
+ * Plan section 4.1: one Zod schema, a JSON Schema compatible with it sent as a Bedrock
+ * tool input schema, and the reply parsed with Zod before anything is believed. The two
  * definitions sit in this file next to each other on purpose — they are one contract in
  * two encodings, and letting them drift apart would mean the model is constrained by one
  * shape and validated against another.
@@ -149,7 +149,7 @@ export type ExtractionResponse = z.infer<typeof extractionResponseSchema>;
  * The JSON Schema sent as `response_format`.
  *
  * Written out rather than generated, so what the provider receives is reviewable in one
- * place. OpenRouter's strict mode requires every property to be listed in `required` and
+ * place. Strict tool schemas require every property to be listed in `required` and
  * `additionalProperties: false` throughout; optionality is expressed by allowing null,
  * which is also what plan 4.1 asks for semantically.
  */

@@ -59,7 +59,15 @@ services:
       STORAGE_DIR: /data/storage
       PORT: 3000
       # Deliberately unset: the API never holds the model key. Only the worker calls
-      # OpenRouter, per the plan's service boundaries.
+      # a model provider, per the plan's service boundaries.
+      #
+      # The model *names* are given, though, and they are not secrets. The provider
+      # toggle has to say which model each option would use, and a reviewer asking what
+      # produced a claim needs that name. Which providers are actually reachable is not
+      # read from here — the worker publishes that to app_settings, because only it holds
+      # the credentials that would answer the question.
+      BEDROCK_MODEL_ID: ${BEDROCK_MODEL_ID:-moonshotai.kimi-k2.5}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
     ports:
       - '3000:3000'
     volumes:
@@ -88,15 +96,36 @@ services:
     environment:
       DATABASE_URL: postgres://superjoin:superjoin@postgres:5432/superjoin
       STORAGE_DIR: /data/storage
-      # The only service given model access, and it will not start without it: there is
-      # no offline mode to fall back to.
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      # The only service given model access, and the region is what grants it: no Bedrock
+      # call can be made without one. Withholding it from the api is what keeps that
+      # service free of model credentials. The worker will not start without a provider —
+      # this one or Groq — because there is no offline mode to fall back to.
+      AWS_REGION: ${AWS_REGION:-}
+      # A Bedrock long-term API key, which is what the console's "API key" button issues.
+      # A bearer token rather than an access-key pair, and it wins over one when both are
+      # set. Blank is read as absent, not as a credential.
+      AWS_BEARER_TOKEN_BEDROCK: ${AWS_BEARER_TOKEN_BEDROCK:-}
+      # Left empty on anything with an instance or task role — the SDK's default chain
+      # resolves those, and a blank value is read as absent rather than as a credential.
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
       # Passed through so the model stays a configuration value rather than a rebuild.
-      # The endpoint is OpenAI-compatible, so this can point at OpenRouter or straight at
-      # a provider that speaks the same protocol; the defaults match packages/config.
-      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
-      LLM_MODEL: ${LLM_MODEL:-google/gemma-4-26b-a4b-it:free}
+      # Accepts a model id or an inference profile ARN; the default matches packages/config.
+      BEDROCK_MODEL_ID: ${BEDROCK_MODEL_ID:-moonshotai.kimi-k2.5}
+      # The second provider. Which of the two actually serves a call is a runtime setting
+      # in app_settings, changed from the header, not an environment variable — these only
+      # say what the deployment has credentials for.
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_BASE_URL: ${GROQ_BASE_URL:-https://api.groq.com/openai/v1}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
       LLM_CONCURRENCY: ${LLM_CONCURRENCY:-2}
+      # Bedrock throttles per account and region, and that throttling clears on its own.
+      # Passed through so the backoff can be widened without a rebuild, same as the model.
+      PROVIDER_MAX_RETRIES: ${PROVIDER_MAX_RETRIES:-5}
+      # Settable without a rebuild: a long document page through a large model takes far
+      # longer than a short completion, and the right ceiling depends on the model chosen.
+      LLM_TIMEOUT_MS: ${LLM_TIMEOUT_MS:-120000}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-Xenova/all-mpnet-base-v2}
     volumes:
       # The same volume the api mounts, at the same path.

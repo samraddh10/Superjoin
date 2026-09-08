@@ -4,7 +4,7 @@
  * Zod schemas are the single definition of each shape: Fastify validates against them and
  * TypeScript types are inferred from them, so a route and its type cannot drift apart.
  * Plan section 4.1 reuses the same approach for the extraction contract, where the schema
- * is also sent as OpenRouter's response_format and the reply re-parsed before it is
+ * is also sent as a Bedrock tool input schema and the reply re-parsed before it is
  * trusted.
  *
  * Nothing here imports a database client. These types cross the wire and are the only

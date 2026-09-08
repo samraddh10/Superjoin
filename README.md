@@ -18,7 +18,7 @@ documents from the Economic Survey, the RBI and the IMF.
 ```bash
 git clone <this repo>
 cd Superjoin
-cp .env.example .env        # then add a model key, see below
+cp .env.example .env        # then set an AWS region, see below
 docker compose up -d --build
 ```
 
@@ -31,32 +31,49 @@ relationships. Use all three from a dataset.
 Migrations run automatically — the `migrate` service must exit successfully before the API
 and worker start, so there is no separate setup step.
 
-### The model key
+### Model access
 
-Only the worker talks to a model, and it will not start without a key — every document is
-processed by calling the model, and there is no offline mode behind it. Put a key in
-`.env`:
+Only the worker calls a model, and it will not start without one — every document is
+processed by calling a model, and there is no offline mode behind it. Inference runs on
+**Amazon Bedrock** through the `Converse` action, or on **Groq**, switchable from the
+interface header; the model is a configuration value rather than a code dependency.
 
 ```
-OPENROUTER_API_KEY=<your key>
-OPENROUTER_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
-LLM_MODEL=gemini-3.5-flash-lite
+AWS_REGION=us-east-1
+BEDROCK_MODEL_ID=moonshotai.kimi-k2.5
 ```
 
-The client is plain OpenAI-compatible, so `OPENROUTER_BASE_URL` can point at OpenRouter or
-straight at any provider speaking that protocol. Two things are worth knowing before you
-pick one, both learned the hard way and documented in `docs/evaluation.md`:
+Credentials come from the AWS SDK's default chain — an SSO profile, environment variables,
+an instance role or a task role all work, and the pipeline never needs to know which. Set
+`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in `.env` only if you have no profile or
+role available.
 
-- **The model must honour `response_format` with a JSON schema.** Gemma ignores it — asked
-  for a strict schema it replies with prose bullet points — so extraction produces nothing.
-  Gemini models honour it. Zod rejects the malformed output either way, so nothing corrupt
-  reaches the database, but the run yields no claims.
-- **Free tiers are the binding constraint, not model speed.** Successful calls run at a
-  2.2s median. What makes a run slow is rate limiting and daily quotas.
+**Enable the model for your region first**, under *Bedrock console → Model access*. Until
+you do, every call returns `AccessDeniedException`; the pipeline reports that as permanent
+and does not retry it, because waiting cannot grant access.
 
-To use a Google key directly, get one at https://aistudio.google.com/apikey. To route
-through OpenRouter instead, set the base URL to `https://openrouter.ai/api/v1` and prefix
-the model (`google/gemini-3.5-flash-lite`).
+Two properties the chosen model needs, both learned the hard way and recorded in
+`docs/evaluation.md`:
+
+- **Tool use, for structured output.** Bedrock has no `response_format`. A JSON Schema is
+  sent as a tool definition with `toolChoice` set to require it, so the reply arrives as
+  already-parsed arguments rather than as JSON that might be wrapped in prose. Zod still
+  re-validates everything; the schema constrains shape, never truth.
+- **Image input, for difficult pages.** Table-like and scanned pages are rendered and
+  transcribed. A text-only model still runs, but every visual-route page fails and falls
+  back to native text.
+
+The configured default, `moonshotai.kimi-k2.5`, supports tool use, so extraction and
+relationship classification work. It has no image input, so the visual route fails and
+table-like pages fall back to native text — a documented limitation rather than a silent
+one, visible as `visual_route_failed` in the Issues view. Anthropic models on Bedrock
+satisfy both requirements if you need the visual route.
+
+Groq is the second provider, and either one on its own is enough to start: set
+`GROQ_API_KEY` instead of `AWS_REGION` and the header toggle offers whichever the worker
+found credentials for. With neither configured the worker exits at startup rather than
+claiming jobs it cannot process. The sample output in `sample-output/` is reviewable
+without any credentials at all; producing new output is not.
 
 ### Checking it works
 
@@ -67,13 +84,13 @@ docker compose logs -f worker        # watch documents process
 ```
 
 The API holds no model key by design and never calls the provider; only the worker does.
-A worker that exits immediately with `not configured` is saying the key never reached it —
-check that `.env` exists and that `OPENROUTER_API_KEY` is set in it.
+A worker that exits immediately with `not configured` is saying no provider reached it —
+check that `.env` exists and that `AWS_REGION` or `GROQ_API_KEY` is set in it.
 
 ### Tests and evaluation
 
 ```bash
-npm install && npm test              # 443 tests; needs postgres up
+npm install && npm test              # 468 tests; needs postgres up
 npx tsx --conditions development evaluation/src/run.ts "<collection name>"
 ```
 
@@ -150,13 +167,14 @@ an absence is not. See `evaluation/results/`.
 verification. Whether the threshold is right is exactly what the gold set would answer,
 and has not been answered.
 
-**Table transcription is unreliable on the free tier.** The visual route asks for
-structured rows and often gets a Markdown table back. It is rejected rather than stored, so
-those pages fall back to native text.
+**Table transcription is unreliable.** The visual route asks for structured rows and
+often gets a Markdown table back. It is rejected rather than stored, so those pages fall
+back to native text.
 
 **The pipeline is call-hungry.** Roughly one model call per chunk, one per difficult page,
 and one per ambiguous entity — several hundred for a 227-page collection. That is inherent
-to grounded extraction, but it makes free tiers impractical for a full collection.
+to grounded extraction, and it is what makes per-account throttling the binding
+constraint on a full collection rather than model speed.
 
 **Printed page labels degrade on unfamiliar documents** — 96.8% coverage on the development
 set, 65.6% on the held-out one. Recorded before any tuning. It costs display detail only:

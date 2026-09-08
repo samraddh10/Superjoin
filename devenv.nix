@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, lib, config, ... }:
 
 # A developer preview of TruthMesh without Docker: the same four services the compose
 # file runs — postgres, migrate, api, worker and web — as native processes.
@@ -15,15 +15,40 @@
 let
 	# Kept in one place because five things below have to agree on them: the postgres
 	# service, DATABASE_URL, drizzle-kit, the API and the Vite proxy target.
-	pgPort = 55432;
+	#
+	# The postgres port is a base rather than a promise. devenv allocates it, taking this
+	# number when it is free and another when it is not, and the allocated value is what
+	# the server actually listens on — so everything downstream reads `pgPort` below, not
+	# this constant.
+	basePgPort = 55432;
 	pgUser = "superjoin";
 	pgDatabase = "superjoin";
 	apiPort = 3000;
 	webPort = 5173;
 
+	# What devenv actually gave postgres. Only ever compared against the configured port,
+	# never substituted for it: the URL below has to keep naming one number, because .env,
+	# .env.example, docker-compose.yml and the test suite all name that same one.
+	allocatedPgPort = config.processes.postgres.ports.main.value;
+
 	# Unix-socket-free, because the containers connect over TCP and the migrations,
 	# tests and evaluation runner all read this same URL from the environment.
-	databaseUrl = "postgres://${pgUser}:${pgUser}@localhost:${toString pgPort}/${pgDatabase}";
+	databaseUrl = "postgres://${pgUser}:${pgUser}@localhost:${toString basePgPort}/${pgDatabase}";
+
+	# devenv allocates rather than binds: it takes the port above when it is free and the
+	# next one when it is not, and it decides that when the configuration is evaluated. A
+	# server that moved leaves every one of those literals connecting to nothing — or, on
+	# a machine already running Postgres, to the wrong database, which is the failure this
+	# whole port number was chosen to avoid. So it is checked before the first statement
+	# runs rather than diagnosed later.
+	assertPortMatches = ''
+		configured="$(printf '%s' "''${DATABASE_URL:-}" | sed -n 's|.*:\([0-9][0-9]*\)/[^/]*$|\1|p')"
+		if [ -n "$configured" ] && [ "$configured" != "${toString allocatedPgPort}" ]; then
+			echo "DATABASE_URL names port $configured, but devenv allocated ${toString allocatedPgPort} for postgres." >&2
+			echo "Something else was holding ${toString basePgPort} when devenv last evaluated. Free that port and run 'devenv up' again." >&2
+			exit 1
+		fi
+	'';
 
 	# The API and the worker must see the same storage root: they exchange original PDFs
 	# and derived parsing artifacts through it, which is why the compose file mounts one
@@ -68,8 +93,9 @@ in
 	# Configuration
 	#
 	# .env wins where it sets a value; the fallbacks below are the defaults from
-	# .env.example so a fresh clone runs before anyone writes one. Without a model key
-	# the pipeline runs in saved-output mode, which is a working preview.
+	# .env.example so a fresh clone runs before anyone writes one. A model provider is not
+	# among them: there is no offline mode, so the worker exits at startup until AWS_REGION
+	# or GROQ_API_KEY is set. Postgres, the API and the interface still come up without one.
 	# ---------------------------------------------------------------------------------
 
 	dotenv = {
@@ -87,8 +113,10 @@ in
 		# Fallbacks, so a fresh clone runs before anyone writes a .env. mkDefault means a
 		# value in .env wins; without one the processes would otherwise start with no
 		# DATABASE_URL at all, since they do not go through enterShell.
-		DATABASE_URL = lib.mkDefault databaseUrl;
-		PORT = lib.mkDefault (toString apiPort);
+		# mkOptionDefault, not mkDefault: dotenv sets these at mkDefault, and two definitions
+		# at one priority is a conflict rather than an override. This has to lose to .env.
+		DATABASE_URL = lib.mkOptionDefault databaseUrl;
+		PORT = lib.mkOptionDefault (toString apiPort);
 
 		# The web dev server proxies to the API process, not to a container.
 		VITE_API_TARGET = "http://localhost:${toString apiPort}";
@@ -106,7 +134,7 @@ in
 		echo "  devenv up         postgres, migrations, api, worker, web"
 		echo "  migrate           apply pending migrations by hand"
 		echo "  db                psql against the dev database"
-		echo "  npm test          444 tests; needs postgres up"
+		echo "  npm test          468 tests; needs postgres up"
 	'';
 
 	# ---------------------------------------------------------------------------------
@@ -124,7 +152,7 @@ in
 		# 55432 rather than 5432, for the reason docker-compose.yml gives: on 5432 a
 		# stray local Postgres would answer, and migrations would land in someone
 		# else's schema instead of failing loudly.
-		port = pgPort;
+		port = basePgPort;
 		listen_addresses = "127.0.0.1";
 		# Creates the login role and the database it owns, with the same name and
 		# password the compose file uses, so one DATABASE_URL works against either.
@@ -169,7 +197,10 @@ in
 	# ---------------------------------------------------------------------------------
 
 	tasks."truthmesh:migrate" = {
-		exec = ''cd "$DEVENV_ROOT/packages/db" && npx drizzle-kit migrate'';
+		exec = ''
+			${assertPortMatches}
+			cd "$DEVENV_ROOT/packages/db" && npx drizzle-kit migrate
+		'';
 		# Bare process names mean @ready here, so this waits for postgres to accept
 		# connections rather than merely to have been spawned.
 		after = [ "devenv:processes:postgres" ];

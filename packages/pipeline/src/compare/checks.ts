@@ -36,7 +36,7 @@ import {
 import { predicateRelation, type PredicateComparison } from '../normalize/predicates.ts';
 
 /** Bumped when a change here alters what the checks report. Stored on every relationship. */
-export const CHECKS_VERSION = 'checks@1';
+export const CHECKS_VERSION = 'checks@2';
 
 /** A claim as comparison reads it, with both its raw and its resolved context. */
 export interface ComparableClaim {

@@ -15,6 +15,20 @@
       "when": 1788841089377,
       "tag": "0001_predicate_registry",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788889889855,
+      "tag": "0002_app_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788890281922,
+      "tag": "0003_provider_availability",
+      "breakpoints": true
     }
   ]
 }

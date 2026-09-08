@@ -43,7 +43,7 @@ export interface ExtractChunkOptions {
 export interface ChunkExtraction {
   readonly chunkIndex: number;
   readonly claims: readonly ExtractedClaim[];
-  /** What OpenRouter actually served, which need not be what was requested. */
+  /** What actually served the request, which need not be what was requested. */
   readonly servedByModel: string;
   readonly promptTokens: number;
   readonly completionTokens: number;

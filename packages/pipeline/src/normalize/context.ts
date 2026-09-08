@@ -360,13 +360,29 @@ export function compareContext(
     });
   }
 
+  /**
+   * A dimension differs only when both documents state it and state different things.
+   *
+   * Silence is not disagreement. Plan 5.2 requires null to mean unknown rather than a
+   * guess, so a document that does not say whether a figure is consolidated has not
+   * contradicted one that does — it has said nothing, and reading that as a difference
+   * asserts something neither source did.
+   *
+   * This matters beyond tidiness because `corroborates` requires *zero* differences. With
+   * silence counted as a difference, a genuine agreement between two documents was blocked
+   * whenever either left a field unstated, which extraction routinely does — and the
+   * collection produced no corroboration at all. `period_type` above already had this
+   * right and the rest did not.
+   */
+  const bothStated = <T>(x: T | null, y: T | null): boolean => x !== null && y !== null;
+
   const scopeA = normalizeScope(a.scope);
   const scopeB = normalizeScope(b.scope);
-  if (scopeA !== scopeB) {
+  if (bothStated(scopeA, scopeB) && scopeA !== scopeB) {
     differences.push({ dimension: 'scope', a: scopeA, b: scopeB, couldExplainGap: true });
   }
 
-  if (a.assertionStatus !== b.assertionStatus) {
+  if (bothStated(a.assertionStatus, b.assertionStatus) && a.assertionStatus !== b.assertionStatus) {
     differences.push({
       dimension: 'assertion_status',
       a: a.assertionStatus,
@@ -375,11 +391,15 @@ export function compareContext(
     });
   }
 
-  if (normalizeToken(a.unit) !== normalizeToken(b.unit)) {
+  const unitA = normalizeToken(a.unit);
+  const unitB = normalizeToken(b.unit);
+  if (bothStated(unitA, unitB) && unitA !== unitB) {
     differences.push({ dimension: 'unit', a: a.unit, b: b.unit, couldExplainGap: true });
   }
 
-  if (normalizeToken(a.currency) !== normalizeToken(b.currency)) {
+  const currencyA = normalizeToken(a.currency);
+  const currencyB = normalizeToken(b.currency);
+  if (bothStated(currencyA, currencyB) && currencyA !== currencyB) {
     // Not an explanation: plan 5.1 forbids converting currencies without a stated rate,
     // so this makes the pair incomparable rather than reconcilable.
     differences.push({

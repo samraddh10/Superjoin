@@ -16,7 +16,7 @@ Each pair records which channels found it, because a pair only the exact channel
 
 ### Embeddings
 
-Local, through `@huggingface/transformers`, `Xenova/all-mpnet-base-v2` at 768 dimensions, normalized. OpenRouter serves no embedding models at all, so this cannot come from the same provider.
+Local, through `@huggingface/transformers`, `Xenova/all-mpnet-base-v2` at 768 dimensions, normalized. Bedrock does serve embedding models, but routing every chunk through a billed network call for a vector a local model produces in milliseconds is not worth it.
 
 The embedded text is the subject, predicate, scope, period, unit and qualifiers — never the value. An embedding of "revenue from services was 8,142 crore" is dominated by its digits, and retrieval then ranks by numeric coincidence, which is the opposite of what candidate generation is for.
 

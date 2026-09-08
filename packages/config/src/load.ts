@@ -28,18 +28,18 @@ const nonEmpty = (fallback: string) =>
     .transform((raw) => (raw === undefined || raw.trim() === '' ? fallback : raw.trim()));
 
 /**
- * A credential that may be absent here and required elsewhere.
+ * An absent value and one set to the empty string mean the same thing.
  *
- * An absent key and a key set to the empty string mean the same thing — the empty string
- * is the state a `.env` copied from `.env.example` is actually in — and both resolve to
- * `undefined` so that a single check covers them.
+ * The empty string is the state a `.env` copied from `.env.example` is actually in, and
+ * it is also what Compose substitutes for an unset variable written `${VAR:-}`. Both
+ * resolve to `undefined` so that one check covers them, and so that a blank reads as an
+ * absent provider rather than as a credential that will fail opaquely at the first call.
  *
- * The key is not rejected at this layer because not every process needs one. The API
- * never calls the model and never holds the key; only the worker does, and it demands
- * one at startup through `requireOpenRouterKey`. Rejecting here would put a model
- * credential in the way of a service that has no business holding it.
+ * Provider access is demanded where it is used rather than by this schema: the API
+ * reaches `loadConfig` and holds no model credential by design, so rejecting here would
+ * stop a service that never calls a model. See `requireModelAccess`.
  */
-const optionalSecret = z
+const optionalValue = z
   .string()
   .optional()
   .transform((raw) => {
@@ -52,18 +52,59 @@ const schema = z.object({
   STORAGE_DIR: nonEmpty('./storage'),
   PORT: intInRange(1, 65535, 3000),
 
-  OPENROUTER_API_KEY: optionalSecret,
-  OPENROUTER_BASE_URL: nonEmpty('https://openrouter.ai/api/v1'),
   /**
-   * The `:free` suffix is part of the model identity, not decoration. The paid and free
-   * routes are different deployments and need not behave identically, so the exact
-   * string is recorded on every run.
+   * The region Bedrock is called in.
+   *
+   * Not a redundant flag: Bedrock is regional, model access is granted per region, and no
+   * call can be made without one. Its presence is what makes Bedrock available, while
+   * still allowing credentials to arrive from a task role or SSO profile rather than the
+   * environment. Compose gives this to the worker and withholds it from the API.
    */
-  LLM_MODEL: nonEmpty('google/gemma-4-26b-a4b-it:free'),
+  AWS_REGION: optionalValue,
 
   /**
-   * Embeddings run locally. OpenRouter's catalogue is chat completions only and contains
-   * no embedding models, so the retrieval side of plan 6.1 cannot use the same provider.
+   * A Bedrock long-term API key: a bearer token, not an access-key pair.
+   *
+   * This is what the Bedrock console hands out as an "API key", and it authenticates
+   * with an `Authorization: Bearer` header under a different auth scheme than SigV4 —
+   * so it cannot be split into an id and a secret, and supplying it as one fails
+   * signing. Takes precedence over the pair below when both are present.
+   */
+  AWS_BEARER_TOKEN_BEDROCK: optionalValue,
+
+  /**
+   * SigV4 credentials, when they are not coming from the SDK's default chain.
+   *
+   * Left unset on anything with an instance or task role, which is the deployment the
+   * plan's "keep secrets in server-only packages" note actually wants.
+   */
+  AWS_ACCESS_KEY_ID: optionalValue,
+  AWS_SECRET_ACCESS_KEY: optionalValue,
+  AWS_SESSION_TOKEN: optionalValue,
+
+  /**
+   * Model id or inference profile ARN. Recorded on every run: Bedrock versions its model
+   * ids, and two runs of `:0` and `:1` are not the same experiment.
+   */
+  BEDROCK_MODEL_ID: nonEmpty('moonshotai.kimi-k2.5'),
+
+  /**
+   * Groq, the second provider.
+   *
+   * Present so a run is not blocked by one provider's account state — Bedrock inference
+   * was gated behind account verification while the pipeline was otherwise ready, and a
+   * second OpenAI-compatible endpoint is a few minutes of configuration rather than a
+   * rewrite. Which one is used is a runtime setting, not an environment variable; see
+   * `app_settings`.
+   */
+  GROQ_API_KEY: optionalValue,
+  GROQ_BASE_URL: nonEmpty('https://api.groq.com/openai/v1'),
+  GROQ_MODEL: nonEmpty('openai/gpt-oss-120b'),
+
+  /**
+   * Embeddings run locally. Bedrock does serve embedding models, but moving them there
+   * would put every chunk of every document through a billed network call for a vector
+   * that a 768-dimension local model produces in milliseconds.
    */
   EMBEDDING_MODEL: nonEmpty('Xenova/all-mpnet-base-v2'),
   // 768 keeps the existing vector(768) column valid. Changing this invalidates every
@@ -89,9 +130,15 @@ export interface Config {
   readonly storageDir: string;
   readonly port: number;
 
-  readonly openRouterApiKey: string | undefined;
-  readonly openRouterBaseUrl: string;
-  readonly llmModel: string;
+  readonly awsRegion: string | undefined;
+  readonly awsBearerToken: string | undefined;
+  readonly awsAccessKeyId: string | undefined;
+  readonly awsSecretAccessKey: string | undefined;
+  readonly awsSessionToken: string | undefined;
+  readonly bedrockModelId: string;
+  readonly groqApiKey: string | undefined;
+  readonly groqBaseUrl: string;
+  readonly groqModel: string;
 
   readonly embeddingModel: string;
   readonly embeddingDimensions: number;
@@ -130,9 +177,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     storageDir: value.STORAGE_DIR,
     port: value.PORT,
 
-    openRouterApiKey: value.OPENROUTER_API_KEY,
-    openRouterBaseUrl: value.OPENROUTER_BASE_URL,
-    llmModel: value.LLM_MODEL,
+    awsRegion: value.AWS_REGION,
+    awsBearerToken: value.AWS_BEARER_TOKEN_BEDROCK,
+    awsAccessKeyId: value.AWS_ACCESS_KEY_ID,
+    awsSecretAccessKey: value.AWS_SECRET_ACCESS_KEY,
+    awsSessionToken: value.AWS_SESSION_TOKEN,
+    bedrockModelId: value.BEDROCK_MODEL_ID,
+    groqApiKey: value.GROQ_API_KEY,
+    groqBaseUrl: value.GROQ_BASE_URL,
+    groqModel: value.GROQ_MODEL,
 
     embeddingModel: value.EMBEDDING_MODEL,
     embeddingDimensions: value.EMBEDDING_DIMENSIONS,
@@ -150,19 +203,20 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
 }
 
 /**
- * The model key, or a refusal to continue without one.
+ * A refusal to continue without a provider to call.
  *
- * Called by the process that actually reaches the provider, at startup rather than at
- * the first completion: a worker that begins consuming jobs and only then discovers it
- * has no credential has already claimed work it cannot do, and every one of those jobs
- * pays a full retry ladder to learn the same thing.
+ * Called by the process that actually reaches a provider, at startup rather than at the
+ * first completion: a worker that begins consuming jobs and only then discovers it has no
+ * credential has already claimed work it cannot do, and every one of those jobs pays a
+ * full retry ladder to learn the same thing.
+ *
+ * Either provider satisfies it. Which one a run uses is a runtime setting, so demanding
+ * both here would refuse to start a machine that is configured to use the one it has.
  */
-export function requireOpenRouterKey(config: Config): string {
-  if (config.openRouterApiKey === undefined) {
+export function requireModelAccess(config: Config): void {
+  if (config.awsRegion === undefined && config.groqApiKey === undefined) {
     throw new ConfigError(
-      'OPENROUTER_API_KEY is required: this service calls the model on every document, and there is no offline mode to fall back to',
+      'no model provider is configured: set AWS_REGION for Bedrock or GROQ_API_KEY for Groq. This service calls a model on every document, and there is no offline mode to fall back to',
     );
   }
-
-  return config.openRouterApiKey;
 }

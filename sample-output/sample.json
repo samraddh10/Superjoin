@@ -1,6 +1,6 @@
 {
   "collection": "Delhivery (verification run)",
-  "exported_at": "2026-09-08T04:50:49.795Z",
+  "exported_at": "2026-09-08T09:16:48.052Z",
   "note": "Real stored rows from a processed collection, so the output can be reviewed without an API key. Claims carry the passage they cite and whether it was found and whether it supports them, which are separate questions.",
   "documents": [
     {
@@ -20,35 +20,61 @@
     }
   ],
   "counts": {
-    "claims_total": 562,
-    "relationships_total": 2175,
+    "claims_total": 1250,
+    "relationships_total": 17521,
     "relationships_by_method": {
-      "deterministic": 2175
+      "model": 51,
+      "deterministic": 17470
     },
     "predicate_vocabulary": 0
   },
   "claims": [
     {
-      "subject": "Board & Committees",
-      "predicate": "composition_changes_details_location",
+      "subject": "Offer",
+      "predicate": "credit_rating_requirement",
       "raw_value": null,
       "numeric_value": null,
       "currency": null,
       "scale": null,
-      "period_label": "FY24",
+      "period_label": null,
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+      "original_statement": "As the Offer is of Equity Shares, credit rating is not required.",
+      "evidence": [
+        {
+          "quote": "As the Offer is of Equity Shares, credit rating is not required.",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+          "physical_page": 38,
+          "printed_page_label": "114",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "Annual Report",
+      "predicate": "annual_report_period",
+      "raw_value": "2023-24",
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": "2023-24",
       "scope": null,
       "status": "accepted",
       "status_reason": "quoted passage located in the document text",
       "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "Details about changes in the composition of Board & Committees during FY24 and till the date of Annual Report are provided in the Corporate Governance Report forming part of this Annual Report.",
+      "original_statement": "Annual Report 2023-24 43",
       "evidence": [
         {
-          "quote": "Details about changes in the composition of Board & Committees during FY24 and till the date of Annual Report are provided in the Corporate Governance Report forming part of this Annual Report.",
+          "quote": "Annual Report 2023-24 43",
           "verification": "verified_native_text",
           "entailment": "supported",
           "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 20,
-          "printed_page_label": "40-41",
+          "physical_page": 21,
+          "printed_page_label": "42-43",
           "extraction_method": "native_text"
         }
       ]
@@ -79,9 +105,9 @@
       ]
     },
     {
-      "subject": "Bid/Offer",
-      "predicate": "opening_date",
-      "raw_value": "May 11, 2022",
+      "subject": "Businesses",
+      "predicate": "can_track_shipments",
+      "raw_value": null,
       "numeric_value": null,
       "currency": null,
       "scale": null,
@@ -89,16 +115,66 @@
       "scope": null,
       "status": "accepted",
       "status_reason": "quoted passage located in the document text",
-      "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-      "original_statement": "Bid/Offer Opened On May 11, 2022",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "Businesses can track their in-transit shipments in real time.",
       "evidence": [
         {
-          "quote": "Bid/Offer Opened On May 11, 2022",
+          "quote": "Businesses can track their in-transit shipments in real time.",
           "verification": "verified_native_text",
           "entailment": "supported",
-          "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-          "physical_page": 0,
-          "printed_page_label": null,
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 15,
+          "printed_page_label": "30-31",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "shipments",
+      "predicate": "average_shipments_percentage",
+      "raw_value": "5-30%",
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": "daily",
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "5-30% average shipments daily",
+      "evidence": [
+        {
+          "quote": "5-30%",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 13,
+          "printed_page_label": "26-27",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "Annual Report",
+      "predicate": "report_year",
+      "raw_value": "2023-24",
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": "2023-24",
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "Annual Report 2023-24",
+      "evidence": [
+        {
+          "quote": "Annual Report 2023-24",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 12,
+          "printed_page_label": "24-25",
           "extraction_method": "native_text"
         }
       ]
@@ -129,31 +205,6 @@
       ]
     },
     {
-      "subject": "Unnamed individual",
-      "predicate": "date_of_birth",
-      "raw_value": "September 20, 1971",
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": null,
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-      "original_statement": "Date of birth: September 20, 1971",
-      "evidence": [
-        {
-          "quote": "Date of birth: September 20, 1971",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-          "physical_page": 85,
-          "printed_page_label": "260",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
       "subject": "document section",
       "predicate": "report_type",
       "raw_value": null,
@@ -179,106 +230,6 @@
       ]
     },
     {
-      "subject": "Annual Report",
-      "predicate": "publication_year",
-      "raw_value": "2023-24",
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": "2023-24",
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "Annual Report 2023-24",
-      "evidence": [
-        {
-          "quote": "Annual Report 2023-24 27",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 13,
-          "printed_page_label": "26-27",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "financial liability",
-      "predicate": "is_derecognised_when",
-      "raw_value": null,
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": null,
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "A financial liability is derecognised when the obligation calculated and applied to project future cash flows under the liability is discharged or cancelled or expires.",
-      "evidence": [
-        {
-          "quote": "A financial liability is derecognised when the obligation calculated and applied to project future cash flows under the liability is discharged or cancelled or expires.",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 76,
-          "printed_page_label": "232-233",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "Delhivery",
-      "predicate": "provides_identity_giving_visibility",
-      "raw_value": null,
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": null,
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "This distinctive identity gives businesses unified visibility across their suppliers and customers, with part truckload and express parcel unified in one platform.",
-      "evidence": [
-        {
-          "quote": "This distinctive\nidentity gives businesses unified visibility across their suppliers and customers, with part truckload and express parcel\nunified in one platform.",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 15,
-          "printed_page_label": "30-31",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "unspecified values",
-      "predicate": "stated_numbers",
-      "raw_value": "895 1,355 7,557 4,219 9,414 1.6",
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": null,
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "895 1,355 7,557 4,219 9,414 1.6",
-      "evidence": [
-        {
-          "quote": "895 1,355 7,557 4,219 9,414 1.6",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 5,
-          "printed_page_label": "10-11",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
       "subject": "cost reduction",
       "predicate": "cost_reduction_percentage",
       "raw_value": "5-15%",
@@ -299,131 +250,6 @@
           "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
           "physical_page": 13,
           "printed_page_label": "26-27",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "Delhivery One",
-      "predicate": "description",
-      "raw_value": null,
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": null,
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "Our unified logistics interface -Delhivery One - streamlines shipping for businesses by consolidating Delhivery’s logistics and data services into a single, intuitive interface.",
-      "evidence": [
-        {
-          "quote": "Our unified logistics interface -Delhivery One - streamlines shipping for businesses by consolidating Delhivery’s logistics and data services into a single, intuitive interface.",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 10,
-          "printed_page_label": "20-21",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "Businesses",
-      "predicate": "can_track_shipments",
-      "raw_value": null,
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": null,
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "Businesses can track their in-transit shipments in real time.",
-      "evidence": [
-        {
-          "quote": "Businesses can track their in-transit shipments in real time.",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 15,
-          "printed_page_label": "30-31",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "Population to pin code mapping",
-      "predicate": "source",
-      "raw_value": null,
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": null,
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "Source: Population to pin code mapping basis census and GeoIQ open source data",
-      "evidence": [
-        {
-          "quote": "Population to pin code mapping basis census and GeoIQ open source data",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 10,
-          "printed_page_label": "20-21",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "Highlights",
-      "predicate": "page_number",
-      "raw_value": "6-9",
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": null,
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "Highlights 6-9",
-      "evidence": [
-        {
-          "quote": "Highlights 6-9",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 0,
-          "printed_page_label": "1",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "Annual Report",
-      "predicate": "year",
-      "raw_value": "2023-24",
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": "2023-24",
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "Annual Report 2023-24 29",
-      "evidence": [
-        {
-          "quote": "Annual Report 2023-24",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 14,
-          "printed_page_label": "28-29",
           "extraction_method": "native_text"
         }
       ]
@@ -463,6 +289,81 @@
       ]
     },
     {
+      "subject": "unspecified values",
+      "predicate": "stated_numbers",
+      "raw_value": "5.8 (3.4)",
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": null,
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "5.8 (3.4)",
+      "evidence": [
+        {
+          "quote": "5.8 (3.4)",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 5,
+          "printed_page_label": "10-11",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "Offer",
+      "predicate": "green_shoe_option_status",
+      "raw_value": null,
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": null,
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+      "original_statement": "No green shoe option is contemplated under the Offer.",
+      "evidence": [
+        {
+          "quote": "No green shoe option is contemplated under the Offer.",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+          "physical_page": 38,
+          "printed_page_label": "114",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "Highlights",
+      "predicate": "page_number",
+      "raw_value": "6-9",
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": null,
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "Highlights 6-9",
+      "evidence": [
+        {
+          "quote": "Highlights 6-9",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 0,
+          "printed_page_label": "1",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
       "subject": "pin codes",
       "predicate": "pin_codes_range",
       "raw_value": "700-6,000",
@@ -483,6 +384,115 @@
           "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
           "physical_page": 12,
           "printed_page_label": "24-25",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "Annual Report",
+      "predicate": "year",
+      "raw_value": "2023-24",
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": "2023-24",
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "Annual Report 2023-24 29",
+      "evidence": [
+        {
+          "quote": "Annual Report 2023-24",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 14,
+          "printed_page_label": "28-29",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "Bid/Offer",
+      "predicate": "opening_date",
+      "raw_value": "May 11, 2022",
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": null,
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+      "original_statement": "Bid/Offer Opened On May 11, 2022",
+      "evidence": [
+        {
+          "quote": "Bid/Offer Opened On May 11, 2022",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+          "physical_page": 0,
+          "printed_page_label": null,
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "Delhivery Limited",
+      "predicate": "cin_number",
+      "raw_value": "L63090DL2011PLC221234",
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": null,
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "CIN: L63090DL2011PLC221234",
+      "evidence": [
+        {
+          "quote": "CIN: L63090DL2011PLC221234",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 76,
+          "printed_page_label": "232-233",
+          "extraction_method": "native_text"
+        },
+        {
+          "quote": "CIN: L63090DL2011PLC221234",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 81,
+          "printed_page_label": "242-243",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "Unnamed individual",
+      "predicate": "date_of_birth",
+      "raw_value": "September 20, 1971",
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": null,
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+      "original_statement": "Date of birth: September 20, 1971",
+      "evidence": [
+        {
+          "quote": "Date of birth: September 20, 1971",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+          "physical_page": 85,
+          "printed_page_label": "260",
           "extraction_method": "native_text"
         }
       ]
@@ -513,131 +523,6 @@
       ]
     },
     {
-      "subject": "unspecified values",
-      "predicate": "stated_numbers",
-      "raw_value": "5.8 (3.4)",
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": null,
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "5.8 (3.4)",
-      "evidence": [
-        {
-          "quote": "5.8 (3.4)",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 5,
-          "printed_page_label": "10-11",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "People Initiatives",
-      "predicate": "page_number",
-      "raw_value": "32-35",
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": null,
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "People Initiatives 32-35",
-      "evidence": [
-        {
-          "quote": "People Initiatives 32-35",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 0,
-          "printed_page_label": "1",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "Corporate Overview Statutory Reports Financial Statements",
-      "predicate": "section_heading",
-      "raw_value": null,
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": null,
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "Corporate Overview Statutory Reports Financial Statements",
-      "evidence": [
-        {
-          "quote": "Corporate Overview Statutory Reports Financial Statements",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 5,
-          "printed_page_label": "10-11",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "shipments",
-      "predicate": "average_shipments_percentage",
-      "raw_value": "5-30%",
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": "daily",
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "5-30% average shipments daily",
-      "evidence": [
-        {
-          "quote": "5-30%",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 13,
-          "printed_page_label": "26-27",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "FY22 Part-truckload tonnage",
-      "predicate": "basis",
-      "raw_value": null,
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": "FY22",
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "* FY22 is on a pro forma basis",
-      "evidence": [
-        {
-          "quote": "* FY22 is on a pro forma basis",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 5,
-          "printed_page_label": "10-11",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
       "subject": "Affordable logistics",
       "predicate": "is_crucial",
       "raw_value": null,
@@ -663,8 +548,8 @@
       ]
     },
     {
-      "subject": "Full Container Load (FCL)",
-      "predicate": "service_offering",
+      "subject": "Population to pin code mapping",
+      "predicate": "source",
       "raw_value": null,
       "numeric_value": null,
       "currency": null,
@@ -674,15 +559,90 @@
       "status": "accepted",
       "status_reason": "quoted passage located in the document text",
       "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "Full Container Load (FCL)",
+      "original_statement": "Source: Population to pin code mapping basis census and GeoIQ open source data",
       "evidence": [
         {
-          "quote": "• Full Container Load (FCL)",
+          "quote": "Population to pin code mapping basis census and GeoIQ open source data",
           "verification": "verified_native_text",
           "entailment": "supported",
           "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 2,
-          "printed_page_label": "4-5",
+          "physical_page": 10,
+          "printed_page_label": "20-21",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "Delhivery One",
+      "predicate": "description",
+      "raw_value": null,
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": null,
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "Our unified logistics interface -Delhivery One - streamlines shipping for businesses by consolidating Delhivery’s logistics and data services into a single, intuitive interface.",
+      "evidence": [
+        {
+          "quote": "Our unified logistics interface -Delhivery One - streamlines shipping for businesses by consolidating Delhivery’s logistics and data services into a single, intuitive interface.",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 10,
+          "printed_page_label": "20-21",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "Delhivery In Numbers",
+      "predicate": "page_number",
+      "raw_value": "2-3",
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": null,
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "Delhivery In Numbers 2-3",
+      "evidence": [
+        {
+          "quote": "Delhivery In Numbers 2-3",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 0,
+          "printed_page_label": "1",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "unspecified values",
+      "predicate": "stated_numbers",
+      "raw_value": "895 1,355 7,557 4,219 9,414 1.6",
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": null,
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "895 1,355 7,557 4,219 9,414 1.6",
+      "evidence": [
+        {
+          "quote": "895 1,355 7,557 4,219 9,414 1.6",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 5,
+          "printed_page_label": "10-11",
           "extraction_method": "native_text"
         }
       ]
@@ -840,8 +800,8 @@
       ]
     },
     {
-      "subject": "TransportOne",
-      "predicate": "software_description",
+      "subject": "Corporate Overview Statutory Reports Financial Statements",
+      "predicate": "section_heading",
       "raw_value": null,
       "numeric_value": null,
       "currency": null,
@@ -851,65 +811,15 @@
       "status": "accepted",
       "status_reason": "quoted passage located in the document text",
       "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "TransportOne: Transport management software",
+      "original_statement": "Corporate Overview Statutory Reports Financial Statements",
       "evidence": [
         {
-          "quote": "• TransportOne: Transport management\nsoftware",
+          "quote": "Corporate Overview Statutory Reports Financial Statements",
           "verification": "verified_native_text",
           "entailment": "supported",
           "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 2,
-          "printed_page_label": "4-5",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "automated material handling systems",
-      "predicate": "throughput_range",
-      "raw_value": "3,000 to 32,000",
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": null,
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-      "original_statement": "These automated material handling systems provide throughput ranging from 3,000 to 32,000 shipments per hour.",
-      "evidence": [
-        {
-          "quote": "These automated material handling systems provide throughput ranging from 3,000 to 32,000 shipments per hour.",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-          "physical_page": 50,
-          "printed_page_label": "221",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "Annual Report",
-      "predicate": "report_year",
-      "raw_value": "2023-24",
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": "2023-24",
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "Annual Report 2023-24",
-      "evidence": [
-        {
-          "quote": "Annual Report 2023-24",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 12,
-          "printed_page_label": "24-25",
+          "physical_page": 5,
+          "printed_page_label": "10-11",
           "extraction_method": "native_text"
         }
       ]
@@ -940,6 +850,56 @@
       ]
     },
     {
+      "subject": "TransportOne",
+      "predicate": "software_description",
+      "raw_value": null,
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": null,
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "TransportOne: Transport management software",
+      "evidence": [
+        {
+          "quote": "• TransportOne: Transport management\nsoftware",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 2,
+          "printed_page_label": "4-5",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "Delhivery",
+      "predicate": "provides_identity_giving_visibility",
+      "raw_value": null,
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": null,
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "This distinctive identity gives businesses unified visibility across their suppliers and customers, with part truckload and express parcel unified in one platform.",
+      "evidence": [
+        {
+          "quote": "This distinctive\nidentity gives businesses unified visibility across their suppliers and customers, with part truckload and express parcel\nunified in one platform.",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 15,
+          "printed_page_label": "30-31",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
       "subject": "EBITDA",
       "predicate": "mentioned",
       "raw_value": null,
@@ -965,9 +925,9 @@
       ]
     },
     {
-      "subject": "Offer",
-      "predicate": "green_shoe_option_status",
-      "raw_value": null,
+      "subject": "automated material handling systems",
+      "predicate": "throughput_range",
+      "raw_value": "3,000 to 32,000",
       "numeric_value": null,
       "currency": null,
       "scale": null,
@@ -976,22 +936,122 @@
       "status": "accepted",
       "status_reason": "quoted passage located in the document text",
       "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-      "original_statement": "No green shoe option is contemplated under the Offer.",
+      "original_statement": "These automated material handling systems provide throughput ranging from 3,000 to 32,000 shipments per hour.",
       "evidence": [
         {
-          "quote": "No green shoe option is contemplated under the Offer.",
+          "quote": "These automated material handling systems provide throughput ranging from 3,000 to 32,000 shipments per hour.",
           "verification": "verified_native_text",
           "entailment": "supported",
           "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-          "physical_page": 38,
-          "printed_page_label": "114",
+          "physical_page": 50,
+          "printed_page_label": "221",
           "extraction_method": "native_text"
         }
       ]
     },
     {
-      "subject": "Delhivery Limited",
-      "predicate": "cin_number",
+      "subject": "FY22 Part-truckload tonnage",
+      "predicate": "basis",
+      "raw_value": null,
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": "FY22",
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "* FY22 is on a pro forma basis",
+      "evidence": [
+        {
+          "quote": "* FY22 is on a pro forma basis",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 5,
+          "printed_page_label": "10-11",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "Annual Report",
+      "predicate": "publication_year",
+      "raw_value": "2023-24",
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": "2023-24",
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "Annual Report 2023-24",
+      "evidence": [
+        {
+          "quote": "Annual Report 2023-24 27",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 13,
+          "printed_page_label": "26-27",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "financial liability",
+      "predicate": "is_derecognised_when",
+      "raw_value": null,
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": null,
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "A financial liability is derecognised when the obligation calculated and applied to project future cash flows under the liability is discharged or cancelled or expires.",
+      "evidence": [
+        {
+          "quote": "A financial liability is derecognised when the obligation calculated and applied to project future cash flows under the liability is discharged or cancelled or expires.",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 76,
+          "printed_page_label": "232-233",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "People Initiatives",
+      "predicate": "page_number",
+      "raw_value": "32-35",
+      "numeric_value": null,
+      "currency": null,
+      "scale": null,
+      "period_label": null,
+      "scope": null,
+      "status": "accepted",
+      "status_reason": "quoted passage located in the document text",
+      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "original_statement": "People Initiatives 32-35",
+      "evidence": [
+        {
+          "quote": "People Initiatives 32-35",
+          "verification": "verified_native_text",
+          "entailment": "supported",
+          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+          "physical_page": 0,
+          "printed_page_label": "1",
+          "extraction_method": "native_text"
+        }
+      ]
+    },
+    {
+      "subject": "Company",
+      "predicate": "cin",
       "raw_value": "L63090DL2011PLC221234",
       "numeric_value": null,
       "currency": null,
@@ -1008,8 +1068,8 @@
           "verification": "verified_native_text",
           "entailment": "supported",
           "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 76,
-          "printed_page_label": "232-233",
+          "physical_page": 77,
+          "printed_page_label": "234-235",
           "extraction_method": "native_text"
         },
         {
@@ -1017,58 +1077,8 @@
           "verification": "verified_native_text",
           "entailment": "supported",
           "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 81,
-          "printed_page_label": "242-243",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "Delhivery In Numbers",
-      "predicate": "page_number",
-      "raw_value": "2-3",
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": null,
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "Delhivery In Numbers 2-3",
-      "evidence": [
-        {
-          "quote": "Delhivery In Numbers 2-3",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 0,
-          "printed_page_label": "1",
-          "extraction_method": "native_text"
-        }
-      ]
-    },
-    {
-      "subject": "Annual Report",
-      "predicate": "annual_report_period",
-      "raw_value": "2023-24",
-      "numeric_value": null,
-      "currency": null,
-      "scale": null,
-      "period_label": "2023-24",
-      "scope": null,
-      "status": "accepted",
-      "status_reason": "quoted passage located in the document text",
-      "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-      "original_statement": "Annual Report 2023-24 43",
-      "evidence": [
-        {
-          "quote": "Annual Report 2023-24 43",
-          "verification": "verified_native_text",
-          "entailment": "supported",
-          "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-          "physical_page": 21,
-          "printed_page_label": "42-43",
+          "physical_page": 82,
+          "printed_page_label": null,
           "extraction_method": "native_text"
         }
       ]
@@ -1076,670 +1086,77 @@
   ],
   "relationships": [
     {
-      "label": "insufficient_context",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the deterministic checks could not settle this pair and no classifier was available to read the evidence",
+      "label": "contradicts",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "Both claims identify a DIN for Kapil Bharati, but they provide different numerical values. As a DIN is a unique identifier, these two claims are in direct conflict.",
       "context_differences": [],
-      "uncertainty_reasons": [
-        "classification was not run for this pair",
-        "the classifier could not be reached for this pair (provider_rate_limited)"
-      ],
+      "uncertainty_reasons": [],
       "deterministic_checks": {
         "notes": [],
         "value": {
-          "reason": "the figures differ by 76 count, more than either rounding allows",
+          "reason": "the figures differ by 795484 count, more than either rounding allows",
           "agreement": "disagree",
           "intervalA": [
-            "98.5",
-            "99.5"
+            "1432122.5",
+            "1432123.5"
           ],
           "intervalB": [
-            "22.5",
-            "23.5"
+            "2227606.5",
+            "2227607.5"
           ],
-          "difference": "76",
-          "relativeDifference": "0.76767676767676767677"
+          "difference": "795484",
+          "relativeDifference": "0.3571024871083633693"
         },
-        "version": "checks@1",
+        "version": "checks@2",
         "predicate": {
-          "reason": "both concern is but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
+          "reason": "the same predicate",
+          "relation": "same",
+          "comparable": true
         },
         "scaleRatio": null,
         "entityMatch": "same",
         "retrievedBy": [
+          "exact",
           "semantic"
         ],
         "bothAccepted": true,
         "sameDocument": false,
         "worthComparing": true,
-        "semanticDistance": 0.07781015435274186,
+        "semanticDistance": null,
         "contextDifferences": [],
         "sharedSourceBlocks": []
       },
       "claim_a": {
-        "subject": "page_number",
-        "predicate": "is",
-        "raw_value": "99",
+        "subject": "Kapil Bharati",
+        "predicate": "din",
+        "raw_value": "01432123",
         "period_label": null,
         "scope": null,
         "status": "accepted",
         "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "99"
+        "original_statement": "DIN: 01432123"
       },
       "claim_b": {
-        "subject": "page_number",
-        "predicate": "value_is",
-        "raw_value": "23",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "23"
-      }
-    },
-    {
-      "label": "insufficient_context",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the deterministic checks could not settle this pair and no classifier was available to read the evidence",
-      "context_differences": [],
-      "uncertainty_reasons": [
-        "classification was not run for this pair",
-        "the classifier could not be reached for this pair (provider_rate_limited)"
-      ],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 70 count, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "22.5",
-            "23.5"
-          ],
-          "intervalB": [
-            "92.5",
-            "93.5"
-          ],
-          "difference": "70",
-          "relativeDifference": "0.75268817204301075269"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "both concern value but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "same",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": true,
-        "semanticDistance": 0.0824753003012989,
-        "contextDifferences": [],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "page_number",
-        "predicate": "value_is",
-        "raw_value": "23",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "23"
-      },
-      "claim_b": {
-        "subject": "page_number",
-        "predicate": "stated_value",
-        "raw_value": "93",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "93"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 81 count, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "103.5",
-            "104.5"
-          ],
-          "intervalB": [
-            "22.5",
-            "23.5"
-          ],
-          "difference": "81",
-          "relativeDifference": "0.77884615384615384615"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "both concern value but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.12945542404851285,
-        "contextDifferences": [],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "page number",
-        "predicate": "value",
-        "raw_value": "104",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "104"
-      },
-      "claim_b": {
-        "subject": "page_number",
-        "predicate": "value_is",
-        "raw_value": "23",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "23"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 215 count, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "22.5",
-            "23.5"
-          ],
-          "intervalB": [
-            "237.5",
-            "238.5"
-          ],
-          "difference": "215",
-          "relativeDifference": "0.90336134453781512605"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "both concern value but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.12945542404851285,
-        "contextDifferences": [],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "page_number",
-        "predicate": "value_is",
-        "raw_value": "23",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "23"
-      },
-      "claim_b": {
-        "subject": "page number",
-        "predicate": "value",
-        "raw_value": "238",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "238"
-      }
-    },
-    {
-      "label": "insufficient_context",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the deterministic checks could not settle this pair and no classifier was available to read the evidence",
-      "context_differences": [],
-      "uncertainty_reasons": [
-        "classification was not run for this pair",
-        "the classifier could not be reached for this pair (provider_rate_limited)"
-      ],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 229 count, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "251.5",
-            "252.5"
-          ],
-          "intervalB": [
-            "22.5",
-            "23.5"
-          ],
-          "difference": "229",
-          "relativeDifference": "0.90873015873015873016"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "both concern is but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "same",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": true,
-        "semanticDistance": 0.17420542240137538,
-        "contextDifferences": [],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "page_number",
-        "predicate": "is_printed",
-        "raw_value": "252",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "252"
-      },
-      "claim_b": {
-        "subject": "page_number",
-        "predicate": "value_is",
-        "raw_value": "23",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "23"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 75 count, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "22.5",
-            "23.5"
-          ],
-          "intervalB": [
-            "97.5",
-            "98.5"
-          ],
-          "difference": "75",
-          "relativeDifference": "0.76530612244897959184"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "both concern is but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.24604390679481292,
-        "contextDifferences": [],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "page_number",
-        "predicate": "value_is",
-        "raw_value": "23",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "23"
-      },
-      "claim_b": {
-        "subject": "page number",
-        "predicate": "is",
-        "raw_value": "98",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "98"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 85 count, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "107.5",
-            "108.5"
-          ],
-          "intervalB": [
-            "22.5",
-            "23.5"
-          ],
-          "difference": "85",
-          "relativeDifference": "0.78703703703703703704"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "both concern is but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.24604390679481292,
-        "contextDifferences": [],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "page number",
-        "predicate": "is",
-        "raw_value": "108",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "108"
-      },
-      "claim_b": {
-        "subject": "page_number",
-        "predicate": "value_is",
-        "raw_value": "23",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "23"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 208 count, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "22.5",
-            "23.5"
-          ],
-          "intervalB": [
-            "230.5",
-            "231.5"
-          ],
-          "difference": "208",
-          "relativeDifference": "0.9004329004329004329"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.27469096341998345,
-        "contextDifferences": [],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "page_number",
-        "predicate": "value_is",
-        "raw_value": "23",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "23"
-      },
-      "claim_b": {
-        "subject": "document page number",
-        "predicate": "page_number",
-        "raw_value": "231",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "231"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "assertion_status"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 6 count, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "22.5",
-            "23.5"
-          ],
-          "intervalB": [
-            "28.5",
-            "29.5"
-          ],
-          "difference": "6",
-          "relativeDifference": "0.20689655172413793103"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.3846144217712202,
-        "contextDifferences": [
-          {
-            "a": "reported",
-            "b": null,
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "page_number",
-        "predicate": "value_is",
-        "raw_value": "23",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "23"
-      },
-      "claim_b": {
-        "subject": "Report page",
-        "predicate": "page_number",
-        "raw_value": "29",
+        "subject": "Kapil Bharati",
+        "predicate": "din",
+        "raw_value": "02227607",
         "period_label": null,
         "scope": null,
         "status": "accepted",
         "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-        "original_statement": "Annual Report 2023-24 29"
+        "original_statement": "DIN: 02227607"
       }
     },
     {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
+      "label": "reconciled_by_context",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The difference in the Corporate Identity Number (CIN) is explained by the status of the entity; the 'U' prefix in E1 denotes an unlisted company, while the 'L' prefix in E2 denotes a listed entity. The documents reflect the company's transition from an unlisted to a listed status.",
       "context_differences": [
-        "assertion_status"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 604 count, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "626.5",
-            "627.5"
-          ],
-          "intervalB": [
-            "22.5",
-            "23.5"
-          ],
-          "difference": "604",
-          "relativeDifference": "0.96331738437001594896"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.3949772064407959,
-        "contextDifferences": [
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Declaration",
-        "predicate": "page_number",
-        "raw_value": "627",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "DECLARATION .................................................................................................................................................................... 627"
-      },
-      "claim_b": {
-        "subject": "page_number",
-        "predicate": "value_is",
-        "raw_value": "23",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "23"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "assertion_status"
+        "scope"
       ],
       "uncertainty_reasons": [],
       "deterministic_checks": {
@@ -1747,112 +1164,1077 @@
           "at least one claim states no figure, so no numerical comparison was made"
         ],
         "value": null,
-        "version": "checks@1",
+        "version": "checks@2",
         "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
-          "comparable": false
+          "reason": "the same predicate",
+          "relation": "same",
+          "comparable": true
         },
         "scaleRatio": null,
-        "entityMatch": "different",
+        "entityMatch": "same",
         "retrievedBy": [
+          "exact",
           "semantic"
         ],
         "bothAccepted": true,
         "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.4420880549883669,
-        "contextDifferences": [
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          }
-        ],
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
         "sharedSourceBlocks": []
       },
       "claim_a": {
-        "subject": "Highlights",
-        "predicate": "page_number",
-        "raw_value": "6-9",
+        "subject": "Delhivery Limited",
+        "predicate": "corporate_identity_number",
+        "raw_value": "U63090DL2011PLC221234",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "CORPORATE IDENTITY NUMBER: U63090DL2011PLC221234"
+      },
+      "claim_b": {
+        "subject": "Delhivery Limited",
+        "predicate": "corporate_identity_number",
+        "raw_value": "L63090DL2011PLC221234",
         "period_label": null,
         "scope": null,
         "status": "accepted",
         "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-        "original_statement": "Highlights 6-9"
-      },
-      "claim_b": {
-        "subject": "page_number",
-        "predicate": "value_is",
-        "raw_value": "23",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "23"
+        "original_statement": "1. Corporate Identity Number (CIN) of the Listed Entity L63090DL2011PLC221234"
       }
     },
     {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
+      "label": "reconciled_by_context",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to the same equity share value, with 'I' in the first document being a typographical representation or shorthand for the Indian Rupee (INR) symbol used in the second document. Both documents describe the same company, Delhivery Limited, and the same share structure, confirming the values are identical.",
       "context_differences": [
-        "assertion_status"
+        "units"
       ],
       "uncertainty_reasons": [],
       "deterministic_checks": {
         "notes": [],
         "value": {
-          "reason": "the figures differ by 53 count, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "22.5",
-            "23.5"
-          ],
-          "intervalB": [
-            "75.5",
-            "76.5"
-          ],
-          "difference": "53",
-          "relativeDifference": "0.69736842105263157895"
+          "reason": "I and INR are different quantities",
+          "agreement": "incomparable",
+          "intervalA": null,
+          "intervalB": null,
+          "difference": null,
+          "relativeDifference": null
         },
-        "version": "checks@1",
+        "version": "checks@2",
         "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
+          "reason": "both concern value but are not the same measure",
+          "relation": "related_form",
           "comparable": false
         },
         "scaleRatio": null,
-        "entityMatch": "different",
+        "entityMatch": "same",
         "retrievedBy": [
+          "exact",
           "semantic"
         ],
         "bothAccepted": true,
         "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.4559914135983947,
+        "worthComparing": true,
+        "semanticDistance": null,
         "contextDifferences": [
           {
-            "a": "reported",
-            "b": null,
-            "dimension": "assertion_status",
+            "a": "I",
+            "b": "INR",
+            "dimension": "currency",
+            "couldExplainGap": false
+          }
+        ],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "equity shares",
+        "predicate": "par_value",
+        "raw_value": "1",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "The company has only one class of equity shares having a par value of I 1 per share."
+      },
+      "claim_b": {
+        "subject": "Equity Shares",
+        "predicate": "face_value",
+        "raw_value": "1",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "The face value of the Equity Shares is ₹1 each."
+      }
+    },
+    {
+      "label": "reconciled_by_context",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The difference in the Corporate Identity Number (CIN) prefix, 'U' versus 'L', is reconciled by the context of the documents. The 'U' prefix in E1 denotes an unlisted company, while the 'L' prefix in E2 and E3 denotes a listed company, reflecting the company's change in status over time.",
+      "context_differences": [
+        "period"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern number but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery Limited",
+        "predicate": "corporate_identity_number",
+        "raw_value": "U63090DL2011PLC221234",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "CORPORATE IDENTITY NUMBER: U63090DL2011PLC221234"
+      },
+      "claim_b": {
+        "subject": "Delhivery Limited",
+        "predicate": "cin_number",
+        "raw_value": "L63090DL2011PLC221234",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "CIN: L63090DL2011PLC221234"
+      }
+    },
+    {
+      "label": "reconciled_by_context",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The difference in the Corporate Identity Number (CIN) prefix, 'U' versus 'L', reflects a change in the company's status from an unlisted private company to a listed public company. E1 represents the company at the time of its prospectus, while E2 represents the company as of March 31, 2024, after it became a listed entity.",
+      "context_differences": [
+        "period"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern number but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery Limited",
+        "predicate": "corporate_identity_number",
+        "raw_value": "U63090DL2011PLC221234",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "CORPORATE IDENTITY NUMBER: U63090DL2011PLC221234"
+      },
+      "claim_b": {
+        "subject": "Delhivery Limited",
+        "predicate": "cin_number",
+        "raw_value": "L63090DL2011PLC221234",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "CIN: L63090DL2011PLC221234"
+      }
+    },
+    {
+      "label": "reconciled_by_context",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The two claims refer to the same individual, Madhulika Rawat, and provide different identifiers for her professional status. The documents clarify that 'FCS-8765' refers to her Fellow Company Secretary designation, while 'Membership No: F8765' refers to her general membership number, explaining the difference in format and terminology.",
+      "context_differences": [
+        "definition"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern number but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Madhulika Rawat",
+        "predicate": "fcs_number",
+        "raw_value": "8765",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "FCS-8765"
+      },
+      "claim_b": {
+        "subject": "Madhulika Rawat",
+        "predicate": "membership_number",
+        "raw_value": "F8765",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
+        "original_statement": "Membership No: F8765"
+      }
+    },
+    {
+      "label": "corroborates",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "Both claims state that the value of the equity shares is 1 INR. Par value and face value are synonymous terms in this context, confirming the same financial attribute.",
+      "context_differences": [],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [],
+        "value": {
+          "reason": "the intervals implied by each source rounding overlap",
+          "agreement": "agree",
+          "intervalA": [
+            "0.5",
+            "1.5"
+          ],
+          "intervalB": [
+            "0.5",
+            "1.5"
+          ],
+          "difference": "0",
+          "relativeDifference": "0"
+        },
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern value but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Equity Shares",
+        "predicate": "par_value_per_share",
+        "raw_value": "1",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "y 873,502,280 Equity Shares of ₹1 each;"
+      },
+      "claim_b": {
+        "subject": "Equity Shares",
+        "predicate": "face_value",
+        "raw_value": "1",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "The face value of the Equity Shares is ₹1 each."
+      }
+    },
+    {
+      "label": "corroborates",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "Both claims assert that Delhivery is compliant with regulatory or technical standards. Claim A provides a general statement of compliance with applicable laws, while Claim B specifies compliance with particular technical standards, which are subsets of the broader compliance landscape.",
+      "context_differences": [
+        "scope"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern with but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery",
+        "predicate": "compliance_with_applicable_laws",
+        "raw_value": null,
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "Nil. Based on the nature of business, Delhivery is in compliance with applicable laws."
+      },
+      "claim_b": {
+        "subject": "Delhivery",
+        "predicate": "is_compliant_with",
+        "raw_value": "ISO 27001 requirements and Information Technology General Control testing",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "We are compliant with ISO 27001 requirements and Information Technology General Control testing."
+      }
+    },
+    {
+      "label": "corroborates",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "Both passages describe the service offerings of Delhivery. E1 focuses on digital and analytical services, while E2 focuses on logistics and shipping services, which together support the broader assertion that Delhivery offers a range of services.",
+      "context_differences": [],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern offer, service but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery",
+        "predicate": "offers_services",
+        "raw_value": null,
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "transactions such as billing and remittance, tracking and supply chain analytics, and that integrate with our customers’ systems."
+      },
+      "claim_b": {
+        "subject": "Delhivery",
+        "predicate": "offers_logistics_services",
+        "raw_value": null,
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "Delhivery is the only logistics service that offers express parcel, part truckload and cross-border shipping – on a single, easy-to-use digital interface with a unified rate card for shipments across weight categories."
+      }
+    },
+    {
+      "label": "corroborates",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "Both claims describe the service operations of Delhivery, with one focusing on the digital/system integration aspects and the other on the physical infrastructure required to provide those services. Together, they support the assertion that Delhivery is an integrated logistics service provider that utilizes both digital systems and physical facilities to deliver its services.",
+      "context_differences": [],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern service but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery",
+        "predicate": "offers_services",
+        "raw_value": null,
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "transactions such as billing and remittance, tracking and supply chain analytics, and that integrate with our customers’ systems."
+      },
+      "claim_b": {
+        "subject": "Delhivery",
+        "predicate": "service_provision_infrastructure",
+        "raw_value": null,
+        "period_label": null,
+        "scope": "across the country",
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "To provide its service, it operates Gateways,\nFulfillment Centres, Processing Centres, and Last Mile Centres across the country."
+      }
+    },
+    {
+      "label": "insufficient_context",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to different fiscal periods and lack sufficient descriptive context to determine if the figures are comparable or if they represent the same organizational scope. Claim B provides a raw number without clear definitions of the reporting period or the specific entity scope, making it impossible to reconcile with the specific exclusions mentioned in Claim A.",
+      "context_differences": [
+        "period",
+        "scope"
+      ],
+      "uncertainty_reasons": [
+        "The scope of the entity in Claim B is not explicitly defined.",
+        "The fiscal year definition for FY24 is not provided to allow for a direct comparison with the 2021 date."
+      ],
+      "deterministic_checks": {
+        "notes": [
+          "the reporting scope differs: worldwide, excluding spoton against employees - permanent"
+        ],
+        "value": {
+          "reason": "employees and count are different quantities",
+          "agreement": "incomparable",
+          "intervalA": null,
+          "intervalB": null,
+          "difference": null,
+          "relativeDifference": null
+        },
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern employee but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [
+          {
+            "a": "December 31, 2021",
+            "b": "FY24",
+            "dimension": "period",
+            "couldExplainGap": true
+          },
+          {
+            "a": "as_of_date",
+            "b": "fiscal_year",
+            "dimension": "period_type",
+            "couldExplainGap": true
+          },
+          {
+            "a": "worldwide, excluding spoton",
+            "b": "employees - permanent",
+            "dimension": "scope",
             "couldExplainGap": true
           }
         ],
         "sharedSourceBlocks": []
       },
       "claim_a": {
-        "subject": "page_number",
-        "predicate": "value_is",
-        "raw_value": "23",
+        "subject": "permanent employees",
+        "predicate": "employee_count",
+        "raw_value": "15,392",
+        "period_label": "December 31, 2021",
+        "scope": "worldwide, excluding Spoton",
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "As of December 31, 2021, excluding Spoton, we had 15,392 permanent employees worldwide"
+      },
+      "claim_b": {
+        "subject": "Permanent Employees",
+        "predicate": "fy24_total_employees_and_workers",
+        "raw_value": "18,527",
+        "period_label": "FY24",
+        "scope": "Employees - Permanent",
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "Permanent 18,527 15,117 81.60% 13,225 13,139 99.34%"
+      }
+    },
+    {
+      "label": "insufficient_context",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to different time periods and different reporting scopes, making it impossible to determine if the figures are consistent or contradictory. There is no information provided to reconcile the difference between the FY23 fiscal year data and the December 31, 2021 snapshot.",
+      "context_differences": [
+        "period",
+        "scope",
+        "as_of_date"
+      ],
+      "uncertainty_reasons": [
+        "The reporting periods do not overlap.",
+        "The scope of the employee count is defined differently in each document."
+      ],
+      "deterministic_checks": {
+        "notes": [
+          "the reporting scope differs: employees - permanent against worldwide, excluding spoton"
+        ],
+        "value": {
+          "reason": "count and employees are different quantities",
+          "agreement": "incomparable",
+          "intervalA": null,
+          "intervalB": null,
+          "difference": null,
+          "relativeDifference": null
+        },
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern employee but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [
+          {
+            "a": "FY23",
+            "b": "December 31, 2021",
+            "dimension": "period",
+            "couldExplainGap": true
+          },
+          {
+            "a": "fiscal_year",
+            "b": "as_of_date",
+            "dimension": "period_type",
+            "couldExplainGap": true
+          },
+          {
+            "a": "employees - permanent",
+            "b": "worldwide, excluding spoton",
+            "dimension": "scope",
+            "couldExplainGap": true
+          }
+        ],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Permanent Employees",
+        "predicate": "fy23_total_employees_and_workers",
+        "raw_value": "13,225",
+        "period_label": "FY23",
+        "scope": "Employees - Permanent",
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "Permanent 18,527 15,117 81.60% 13,225 13,139 99.34%"
+      },
+      "claim_b": {
+        "subject": "permanent employees",
+        "predicate": "employee_count",
+        "raw_value": "15,392",
+        "period_label": "December 31, 2021",
+        "scope": "worldwide, excluding Spoton",
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "As of December 31, 2021, excluding Spoton, we had 15,392 permanent employees worldwide"
+      }
+    },
+    {
+      "label": "insufficient_context",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to different time periods and provide insufficient information regarding the scope and definition of the figures to determine if they are comparable. Claim A specifies a worldwide count excluding Spoton as of December 31, 2021, while Claim B provides a figure for FY24 without defining the geographic or organizational scope.",
+      "context_differences": [
+        "period",
+        "scope"
+      ],
+      "uncertainty_reasons": [
+        "The scope of the figure in Claim B is not defined, making it impossible to know if it is meant to be comparable to the worldwide figure excluding Spoton in Claim A.",
+        "The fiscal year period in Claim B is not aligned with the specific as_of_date provided in Claim A."
+      ],
+      "deterministic_checks": {
+        "notes": [
+          "the reporting scope differs: worldwide, excluding spoton against employees - permanent"
+        ],
+        "value": {
+          "reason": "employees and count are different quantities",
+          "agreement": "incomparable",
+          "intervalA": null,
+          "intervalB": null,
+          "difference": null,
+          "relativeDifference": null
+        },
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern employee but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [
+          {
+            "a": "December 31, 2021",
+            "b": "FY24",
+            "dimension": "period",
+            "couldExplainGap": true
+          },
+          {
+            "a": "as_of_date",
+            "b": "fiscal_year",
+            "dimension": "period_type",
+            "couldExplainGap": true
+          },
+          {
+            "a": "worldwide, excluding spoton",
+            "b": "employees - permanent",
+            "dimension": "scope",
+            "couldExplainGap": true
+          }
+        ],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "permanent employees",
+        "predicate": "employee_count",
+        "raw_value": "15,392",
+        "period_label": "December 31, 2021",
+        "scope": "worldwide, excluding Spoton",
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "As of December 31, 2021, excluding Spoton, we had 15,392 permanent employees worldwide"
+      },
+      "claim_b": {
+        "subject": "Permanent Employees",
+        "predicate": "fy24_employees_and_workers_covered",
+        "raw_value": "15,117",
+        "period_label": "FY24",
+        "scope": "Employees - Permanent",
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "Permanent 18,527 15,117 81.60% 13,225 13,139 99.34%"
+      }
+    },
+    {
+      "label": "insufficient_context",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to different time periods and lack sufficient descriptive context to determine if the figures are comparable. Claim B provides a raw number without clear definitions of the scope or the specific fiscal year period, making it impossible to reconcile with the specific 2021 worldwide figure provided in Claim A.",
+      "context_differences": [
+        "period",
+        "scope"
+      ],
+      "uncertainty_reasons": [
+        "The scope of the data in Claim B is not explicitly defined beyond the label 'Permanent'.",
+        "The fiscal year definition for Claim B is not provided in the text.",
+        "The relationship between the figures in the table in E2 and the total permanent employee count is not explained."
+      ],
+      "deterministic_checks": {
+        "notes": [
+          "the reporting scope differs: worldwide, excluding spoton against employees - permanent"
+        ],
+        "value": {
+          "reason": "employees and count are different quantities",
+          "agreement": "incomparable",
+          "intervalA": null,
+          "intervalB": null,
+          "difference": null,
+          "relativeDifference": null
+        },
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern employee but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [
+          {
+            "a": "December 31, 2021",
+            "b": "FY23",
+            "dimension": "period",
+            "couldExplainGap": true
+          },
+          {
+            "a": "as_of_date",
+            "b": "fiscal_year",
+            "dimension": "period_type",
+            "couldExplainGap": true
+          },
+          {
+            "a": "worldwide, excluding spoton",
+            "b": "employees - permanent",
+            "dimension": "scope",
+            "couldExplainGap": true
+          }
+        ],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "permanent employees",
+        "predicate": "employee_count",
+        "raw_value": "15,392",
+        "period_label": "December 31, 2021",
+        "scope": "worldwide, excluding Spoton",
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "As of December 31, 2021, excluding Spoton, we had 15,392 permanent employees worldwide"
+      },
+      "claim_b": {
+        "subject": "Permanent Employees",
+        "predicate": "fy23_employees_and_workers_covered",
+        "raw_value": "13,139",
+        "period_label": "FY23",
+        "scope": "Employees - Permanent",
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "Permanent 18,527 15,117 81.60% 13,225 13,139 99.34%"
+      }
+    },
+    {
+      "label": "insufficient_context",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims describe different services offered by the same company. There is no information provided to suggest that these services are mutually exclusive or that one claim is intended to be an exhaustive list of services.",
+      "context_differences": [
+        "scope"
+      ],
+      "uncertainty_reasons": [
+        "The claims describe different service offerings and do not provide a comprehensive list of all services provided by the company."
+      ],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern service but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery Limited",
+        "predicate": "offered_service_or_feature",
+        "raw_value": null,
         "period_label": null,
         "scope": null,
         "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "23"
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "Express PTL"
+      },
+      "claim_b": {
+        "subject": "Delhivery",
+        "predicate": "offers_services",
+        "raw_value": null,
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "transactions such as billing and remittance, tracking and supply chain analytics, and that integrate with our customers’ systems."
+      }
+    },
+    {
+      "label": "insufficient_context",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims address different aspects of Delhivery's business operations: one focuses on its market ranking by revenue in Fiscal 2021, while the other describes its unique service offerings and digital interface. Because the claims describe different attributes of the company, they do not corroborate or contradict each other.",
+      "context_differences": [
+        "period",
+        "scope"
+      ],
+      "uncertainty_reasons": [
+        "The claims describe different business attributes (market ranking vs. service features) rather than conflicting information about the same attribute."
+      ],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern logistic, service but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [
+          {
+            "a": "Fiscal 2021",
+            "b": null,
+            "dimension": "period",
+            "couldExplainGap": true
+          },
+          {
+            "a": "fiscal_year",
+            "b": "unknown",
+            "dimension": "period_type",
+            "couldExplainGap": true
+          },
+          {
+            "a": "ranking_criteria: revenue",
+            "b": null,
+            "dimension": "qualifier",
+            "couldExplainGap": true
+          }
+        ],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery",
+        "predicate": "logistics_services_ranking",
+        "raw_value": null,
+        "period_label": "Fiscal 2021",
+        "scope": "India",
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "According to the RedSeer Report, which has been exclusively commissioned and paid for by us in connection with the Offer, we were the largest and fastest growing fully-integrated logistics services player in India by revenue as of Fiscal 2021."
+      },
+      "claim_b": {
+        "subject": "Delhivery",
+        "predicate": "offers_logistics_services",
+        "raw_value": null,
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "Delhivery is the only logistics service that offers express parcel, part truckload and cross-border shipping – on a single, easy-to-use digital interface with a unified rate card for shipments across weight categories."
+      }
+    },
+    {
+      "label": "unrelated",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to different attributes of the same entity; one identifies the Corporate Identity Number while the other identifies a page number in a document.",
+      "context_differences": [
+        "definition"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern number but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery Limited",
+        "predicate": "corporate_identity_number",
+        "raw_value": "U63090DL2011PLC221234",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "CORPORATE IDENTITY NUMBER: U63090DL2011PLC221234"
+      },
+      "claim_b": {
+        "subject": "Delhivery Limited",
+        "predicate": "page_number",
+        "raw_value": "4",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "4 Delhivery Limited"
+      }
+    },
+    {
+      "label": "unrelated",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to different attributes of the entity Delhivery Limited; one identifies the Corporate Identity Number while the other identifies a document page number.",
+      "context_differences": [
+        "definition"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern number but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery Limited",
+        "predicate": "corporate_identity_number",
+        "raw_value": "U63090DL2011PLC221234",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "CORPORATE IDENTITY NUMBER: U63090DL2011PLC221234"
       },
       "claim_b": {
         "subject": "Delhivery Limited",
@@ -1867,633 +2249,12 @@
     },
     {
       "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to different attributes of the company: one identifies a page number in a document, while the other identifies the Corporate Identity Number (CIN). These are distinct pieces of information that do not conflict or corroborate each other.",
       "context_differences": [
-        "assertion_status"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 569 count, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "591.5",
-            "592.5"
-          ],
-          "intervalB": [
-            "22.5",
-            "23.5"
-          ],
-          "difference": "569",
-          "relativeDifference": "0.96114864864864864865"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.46807200921220316,
-        "contextDifferences": [
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Offer Procedure",
-        "predicate": "page_number",
-        "raw_value": "592",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "OFFER PROCEDURE ......................................................................................................................................................... 592"
-      },
-      "claim_b": {
-        "subject": "page_number",
-        "predicate": "value_is",
-        "raw_value": "23",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "23"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "assertion_status"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 565 count, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "587.5",
-            "588.5"
-          ],
-          "intervalB": [
-            "22.5",
-            "23.5"
-          ],
-          "difference": "565",
-          "relativeDifference": "0.96088435374149659864"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.48121641093803424,
-        "contextDifferences": [
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Offer Structure",
-        "predicate": "page_number",
-        "raw_value": "588",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "OFFER STRUCTURE ......................................................................................................................................................... 588"
-      },
-      "claim_b": {
-        "subject": "page_number",
-        "predicate": "value_is",
-        "raw_value": "23",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "23"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "period_type",
-        "assertion_status",
-        "unit"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 99.88 INR, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "39.5",
-            "40.5"
-          ],
-          "intervalB": [
-            "139.875",
-            "139.885"
-          ],
-          "difference": "99.88",
-          "relativeDifference": "0.7140406062339147841"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "both concern cost but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.4875148627973459,
-        "contextDifferences": [
-          {
-            "a": "FY25",
-            "b": "one year preceding the date of this Prospectus",
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": "fiscal_year",
-            "b": "range",
-            "dimension": "period_type",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "Cr",
-            "b": "INR",
-            "dimension": "unit",
-            "couldExplainGap": true
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
-      },
-      "claim_b": {
-        "subject": "CA Swift Investments",
-        "predicate": "weighted_average_cost_of_acquisition",
-        "raw_value": "139.88",
-        "period_label": "one year preceding the date of this Prospectus",
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "CA Swift Investments | 46,131,800 | 139.88"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "period_type",
-        "assertion_status",
-        "unit",
-        "qualifier"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 56.57 INR, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "39.5",
-            "40.5"
-          ],
-          "intervalB": [
-            "-16.575",
-            "-16.565"
-          ],
-          "difference": "56.57",
-          "relativeDifference": "1.41425"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.51783506625393,
-        "contextDifferences": [
-          {
-            "a": "FY25",
-            "b": null,
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": "fiscal_year",
-            "b": "unknown",
-            "dimension": "period_type",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "Cr",
-            "b": "INR",
-            "dimension": "unit",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "nominal_value_per_share: Re 1",
-            "dimension": "qualifier",
-            "couldExplainGap": true
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
-      },
-      "claim_b": {
-        "subject": "Basic loss per share",
-        "predicate": "value",
-        "raw_value": "(16.57)",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "Loss per share (Nominal value per share - Re 1 ) - Basic loss per share (INR) | (15.36) |  |  |  |  |  | (16.57)"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "period_type",
-        "assertion_status",
-        "unit",
-        "qualifier"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 99.88 INR, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "39.5",
-            "40.5"
-          ],
-          "intervalB": [
-            "139.875",
-            "139.885"
-          ],
-          "difference": "99.88",
-          "relativeDifference": "0.7140406062339147841"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "both concern cost but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.5178439824665623,
-        "contextDifferences": [
-          {
-            "a": "FY25",
-            "b": null,
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": "fiscal_year",
-            "b": "unknown",
-            "dimension": "period_type",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "Cr",
-            "b": "INR",
-            "dimension": "unit",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "number_of_equity_shares_acquired: 46,131,800",
-            "dimension": "qualifier",
-            "couldExplainGap": true
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
-      },
-      "claim_b": {
-        "subject": "CA Swift Investments",
-        "predicate": "average_cost_of_acquisition_per_equity_share",
-        "raw_value": "139.88",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "CA Swift Investments | 46,131,800 | 139.88"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "period_type",
-        "assertion_status",
-        "unit"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 34786359960 INR, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "39.5",
-            "40.5"
-          ],
-          "intervalB": [
-            "34786355000",
-            "34786365000"
-          ],
-          "difference": "34786359960",
-          "relativeDifference": "0.99999999885012401413"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.5299811890670697,
-        "contextDifferences": [
-          {
-            "a": "FY25",
-            "b": null,
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": "fiscal_year",
-            "b": "unknown",
-            "dimension": "period_type",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "Cr",
-            "b": "INR",
-            "dimension": "unit",
-            "couldExplainGap": true
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
-      },
-      "claim_b": {
-        "subject": "Freight, handling and servicing cost",
-        "predicate": "reported_value",
-        "raw_value": "34,786.36",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "Freight, handling and servicing cost | 34,786.36 | 20,257.07 | 27,780.82 | 21,837.96 | 12,506.83"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "assertion_status",
-        "unit",
-        "currency"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "INR and percent are different quantities",
-          "agreement": "incomparable",
-          "intervalA": null,
-          "intervalB": null,
-          "difference": null,
-          "relativeDifference": null
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.5309592279670188,
-        "contextDifferences": [
-          {
-            "a": "FY25",
-            "b": "FY24",
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "Cr",
-            "b": "%",
-            "dimension": "unit",
-            "couldExplainGap": true
-          },
-          {
-            "a": "INR",
-            "b": null,
-            "dimension": "currency",
-            "couldExplainGap": false
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
-      },
-      "claim_b": {
-        "subject": "Capex",
-        "predicate": "percentage_of_rd_and_capital_expenditure_investments_in_specific_technologies",
-        "raw_value": "30.20%",
-        "period_label": "FY24",
-        "scope": null,
-        "status": "accepted",
-        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-        "original_statement": "Capex 30.20% 9.89%"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "period_type",
-        "assertion_status",
-        "unit",
-        "currency"
+        "definition"
       ],
       "uncertainty_reasons": [],
       "deterministic_checks": {
@@ -2501,557 +2262,109 @@
           "at least one claim states no figure, so no numerical comparison was made"
         ],
         "value": null,
-        "version": "checks@1",
+        "version": "checks@2",
         "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
+          "reason": "both concern number but are not the same measure",
+          "relation": "related_form",
           "comparable": false
         },
         "scaleRatio": null,
-        "entityMatch": "different",
+        "entityMatch": "same",
         "retrievedBy": [
+          "exact",
           "semantic"
         ],
         "bothAccepted": true,
         "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.5316744009158726,
-        "contextDifferences": [
-          {
-            "a": "FY25",
-            "b": null,
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": "fiscal_year",
-            "b": "unknown",
-            "dimension": "period_type",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "Cr",
-            "b": null,
-            "dimension": "unit",
-            "couldExplainGap": true
-          },
-          {
-            "a": "INR",
-            "b": null,
-            "dimension": "currency",
-            "couldExplainGap": false
-          }
-        ],
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
         "sharedSourceBlocks": []
       },
       "claim_a": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
+        "subject": "Delhivery Limited",
+        "predicate": "page_number",
+        "raw_value": "28",
+        "period_label": null,
         "scope": null,
         "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "28 Delhivery Limited"
       },
       "claim_b": {
-        "subject": "Cost",
-        "predicate": "is_determined_on",
+        "subject": "Delhivery Limited",
+        "predicate": "corporate_identity_number",
+        "raw_value": "U63090DL2011PLC221234",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "CORPORATE IDENTITY NUMBER: U63090DL2011PLC221234"
+      }
+    },
+    {
+      "label": "unrelated",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to different concepts of identity. Claim A describes a business service feature providing visibility, while Claim B provides the company's legal registration number.",
+      "context_differences": [
+        "definition"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern identity but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery",
+        "predicate": "provides_identity_giving_visibility",
         "raw_value": null,
         "period_label": null,
         "scope": null,
         "status": "accepted",
         "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-        "original_statement": "Cost is determined on first in first out basis."
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "period_type",
-        "assertion_status",
-        "unit",
-        "qualifier"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 156.19 INR, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "39.5",
-            "40.5"
-          ],
-          "intervalB": [
-            "196.185",
-            "196.195"
-          ],
-          "difference": "156.19",
-          "relativeDifference": "0.79611600999031551047"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "both concern cost but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.5432405626441987,
-        "contextDifferences": [
-          {
-            "a": "FY25",
-            "b": null,
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": "fiscal_year",
-            "b": "unknown",
-            "dimension": "period_type",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "Cr",
-            "b": "INR",
-            "dimension": "unit",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "number_of_equity_shares_acquired: 141,593,300",
-            "dimension": "qualifier",
-            "couldExplainGap": true
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
+        "original_statement": "This distinctive identity gives businesses unified visibility across their suppliers and customers, with part truckload and express parcel unified in one platform."
       },
       "claim_b": {
-        "subject": "SVF Doorbell (Cayman) Ltd",
-        "predicate": "average_cost_of_acquisition_per_equity_share",
-        "raw_value": "196.19",
+        "subject": "Delhivery Limited",
+        "predicate": "corporate_identity_number",
+        "raw_value": "U63090DL2011PLC221234",
         "period_label": null,
         "scope": null,
         "status": "accepted",
         "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "SVF Doorbell (Cayman) Ltd | 141,593,300 | 196.19"
+        "original_statement": "CORPORATE IDENTITY NUMBER: U63090DL2011PLC221234"
       }
     },
     {
       "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to two distinct attributes of the entity: one identifies a page number in a document, while the other identifies the Corporate Identity Number (CIN). These are different pieces of information and do not conflict or corroborate each other.",
       "context_differences": [
-        "period",
-        "assertion_status",
-        "unit",
-        "currency"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "INR and percent are different quantities",
-          "agreement": "incomparable",
-          "intervalA": null,
-          "intervalB": null,
-          "difference": null,
-          "relativeDifference": null
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.5465767955538814,
-        "contextDifferences": [
-          {
-            "a": "FY25",
-            "b": "FY23",
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "Cr",
-            "b": "%",
-            "dimension": "unit",
-            "couldExplainGap": true
-          },
-          {
-            "a": "INR",
-            "b": null,
-            "dimension": "currency",
-            "couldExplainGap": false
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
-      },
-      "claim_b": {
-        "subject": "Capex",
-        "predicate": "percentage_of_rd_and_capital_expenditure_investments_in_specific_technologies",
-        "raw_value": "9.89%",
-        "period_label": "FY23",
-        "scope": null,
-        "status": "accepted",
-        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-        "original_statement": "Capex 30.20% 9.89%"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "period_type",
-        "assertion_status",
-        "unit",
-        "currency"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [
-          "at least one claim states no figure, so no numerical comparison was made",
-          "at least one claim is held for review, so any conclusion drawn from this pair is provisional"
-        ],
-        "value": null,
-        "version": "checks@1",
-        "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": false,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.5542189837946481,
-        "contextDifferences": [
-          {
-            "a": "FY25",
-            "b": null,
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": "fiscal_year",
-            "b": "unknown",
-            "dimension": "period_type",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "Cr",
-            "b": "INR",
-            "dimension": "unit",
-            "couldExplainGap": true
-          },
-          {
-            "a": "INR",
-            "b": null,
-            "dimension": "currency",
-            "couldExplainGap": false
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
-      },
-      "claim_b": {
-        "subject": "remeasurement_loss_gain_on_defined_benefit_plans",
-        "predicate": "reported_value",
-        "raw_value": "10.38, (7.62), (0.00), (24.33), 1.47",
-        "period_label": null,
-        "scope": null,
-        "status": "needs_review",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "(i) Re-measurement (loss) / gain on defined benefit plans | 10.38 | (7.62) | (0.00) | (24.33) | 1.47"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "period_type",
-        "assertion_status",
-        "unit",
-        "qualifier"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 102.91 INR, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "39.5",
-            "40.5"
-          ],
-          "intervalB": [
-            "142.905",
-            "142.915"
-          ],
-          "difference": "102.91",
-          "relativeDifference": "0.72010356168217759429"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "both concern cost but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.5542314049029977,
-        "contextDifferences": [
-          {
-            "a": "FY25",
-            "b": null,
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": "fiscal_year",
-            "b": "unknown",
-            "dimension": "period_type",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "Cr",
-            "b": "INR",
-            "dimension": "unit",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "number_of_equity_shares_acquired: 6,879,000",
-            "dimension": "qualifier",
-            "couldExplainGap": true
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
-      },
-      "claim_b": {
-        "subject": "Deli CMF Pte. Ltd.",
-        "predicate": "average_cost_of_acquisition_per_equity_share",
-        "raw_value": "142.91",
-        "period_label": null,
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "Deli CMF Pte. Ltd. | 6,879,000 | 142.91"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "period_type",
-        "assertion_status",
-        "unit"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 122.46 INR, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "162.455",
-            "162.465"
-          ],
-          "intervalB": [
-            "39.5",
-            "40.5"
-          ],
-          "difference": "122.46",
-          "relativeDifference": "0.75378554721162132217"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "both concern cost but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.5558180545676072,
-        "contextDifferences": [
-          {
-            "a": "Last three years",
-            "b": "FY25",
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": "range",
-            "b": "fiscal_year",
-            "dimension": "period_type",
-            "couldExplainGap": true
-          },
-          {
-            "a": "reported",
-            "b": null,
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "INR",
-            "b": "Cr",
-            "dimension": "unit",
-            "couldExplainGap": true
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "weighted_average_cost_of_acquisition",
-        "predicate": "weighted_average_cost_of_acquisition_last_three_years",
-        "raw_value": "162.46",
-        "period_label": "Last three years",
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "Last three years | 162.46 | 3.00 | Nil** – 400.00"
-      },
-      "claim_b": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "assertion_status",
-        "unit",
-        "currency"
+        "definition"
       ],
       "uncertainty_reasons": [],
       "deterministic_checks": {
@@ -3059,444 +2372,580 @@
           "at least one claim states no figure, so no numerical comparison was made"
         ],
         "value": null,
-        "version": "checks@1",
+        "version": "checks@2",
         "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
+          "reason": "both concern number but are not the same measure",
+          "relation": "related_form",
           "comparable": false
         },
         "scaleRatio": null,
-        "entityMatch": "different",
+        "entityMatch": "same",
         "retrievedBy": [
+          "exact",
           "semantic"
         ],
         "bothAccepted": true,
         "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.5610952021323117,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery Limited",
+        "predicate": "page_number",
+        "raw_value": "42",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "42 Delhivery Limited"
+      },
+      "claim_b": {
+        "subject": "Delhivery Limited",
+        "predicate": "corporate_identity_number",
+        "raw_value": "U63090DL2011PLC221234",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "CORPORATE IDENTITY NUMBER: U63090DL2011PLC221234"
+      }
+    },
+    {
+      "label": "unrelated",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims provide different types of information about the same entity, specifically the corporate office address and the corporate identity number. These are distinct attributes and do not conflict or corroborate each other.",
+      "context_differences": [
+        "definition"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern corporate but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery Limited",
+        "predicate": "corporate_office_address",
+        "raw_value": "Plot No. 5, Sector-44, Gurugram, Haryana 122002",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "Corporate Office: Plot No. 5, Sector-44, Gurugram, Haryana 122002"
+      },
+      "claim_b": {
+        "subject": "Delhivery Limited",
+        "predicate": "corporate_identity_number",
+        "raw_value": "U63090DL2011PLC221234",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "CORPORATE IDENTITY NUMBER: U63090DL2011PLC221234"
+      }
+    },
+    {
+      "label": "unrelated",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The two claims refer to different events: Claim A provides a document date, while Claim B provides the effective date of a corporate name change. They do not concern the same assertion.",
+      "context_differences": [
+        "definition"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern date but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
         "contextDifferences": [
           {
-            "a": "FY25",
-            "b": "FY24",
-            "dimension": "period",
+            "a": "unknown",
+            "b": "as_of_date",
+            "dimension": "period_type",
             "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "Cr",
-            "b": null,
-            "dimension": "unit",
-            "couldExplainGap": true
-          },
-          {
-            "a": "INR",
-            "b": null,
-            "dimension": "currency",
-            "couldExplainGap": false
           }
         ],
         "sharedSourceBlocks": []
       },
       "claim_a": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
+        "subject": "Delhivery Limited",
+        "predicate": "date",
+        "raw_value": "May 17, 2024",
+        "period_label": null,
         "scope": null,
         "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "Date: May 17, 2024"
       },
       "claim_b": {
-        "subject": "Company",
-        "predicate": "annual_return_availability",
+        "subject": "Delhivery Limited",
+        "predicate": "name_change_date",
+        "raw_value": "September 29, 2021",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "September 29, 2021 Clause I of the Memorandum of Association was amended to reflect the change in name from ‘Delhivery Private Limited’ to ‘Delhivery Limited’"
+      }
+    },
+    {
+      "label": "unrelated",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The two claims refer to different attributes of the entity Delhivery Limited. Claim A identifies the Corporate Identity Number, while Claim B identifies a page number from a document.",
+      "context_differences": [
+        "definition"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern number but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery Limited",
+        "predicate": "corporate_identity_number",
+        "raw_value": "U63090DL2011PLC221234",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "CORPORATE IDENTITY NUMBER: U63090DL2011PLC221234"
+      },
+      "claim_b": {
+        "subject": "Delhivery Limited",
+        "predicate": "page_number",
+        "raw_value": "64",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "64 Delhivery Limited"
+      }
+    },
+    {
+      "label": "unrelated",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to different attributes of the entity Delhivery Limited. Claim A identifies the Corporate Identity Number, while Claim B identifies a page number.",
+      "context_differences": [
+        "definition"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern number but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery Limited",
+        "predicate": "corporate_identity_number",
+        "raw_value": "U63090DL2011PLC221234",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "CORPORATE IDENTITY NUMBER: U63090DL2011PLC221234"
+      },
+      "claim_b": {
+        "subject": "Delhivery Limited",
+        "predicate": "page_number",
+        "raw_value": "88",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "88 Delhivery Limited"
+      }
+    },
+    {
+      "label": "unrelated",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to two distinct dates: one is the subject's date of birth and the other is the date a document was signed. These are different attributes of the subject and do not conflict or corroborate each other.",
+      "context_differences": [
+        "definition"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern date but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [
+          {
+            "a": "unknown",
+            "b": "as_of_date",
+            "dimension": "period_type",
+            "couldExplainGap": true
+          }
+        ],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Sahil Barua",
+        "predicate": "date_of_birth",
+        "raw_value": "December 25, 1984",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "Date of birth: December 25, 1984"
+      },
+      "claim_b": {
+        "subject": "Sahil Barua",
+        "predicate": "signed_declaration_date",
+        "raw_value": "July 05, 2024",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "Sahil Barua Date: July 05, 2024 Managing Director and Chief Executive Officer Place: Goa DIN: 05131571"
+      }
+    },
+    {
+      "label": "unrelated",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to two distinct temporal attributes of Sahil Barua: the date he signed a specific declaration and the date his directorship began. These are separate events and do not conflict or corroborate one another.",
+      "context_differences": [
+        "definition"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern date but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [
+          {
+            "a": "as_of_date",
+            "b": "unknown",
+            "dimension": "period_type",
+            "couldExplainGap": true
+          }
+        ],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Sahil Barua",
+        "predicate": "signed_declaration_date",
+        "raw_value": "July 05, 2024",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "Sahil Barua Date: July 05, 2024 Managing Director and Chief Executive Officer Place: Goa DIN: 05131571"
+      },
+      "claim_b": {
+        "subject": "Sahil Barua",
+        "predicate": "directorship_start_date",
+        "raw_value": "December 19, 2011",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "Period of Directorship: Since December 19, 2011"
+      }
+    },
+    {
+      "label": "unrelated",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to two distinct temporal attributes: the start date of a term and the date a document was signed. These dates represent different events in the subject's professional capacity and do not conflict or corroborate one another.",
+      "context_differences": [
+        "definition"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern date but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [
+          {
+            "a": "unknown",
+            "b": "as_of_date",
+            "dimension": "period_type",
+            "couldExplainGap": true
+          },
+          {
+            "a": "duration: Five years",
+            "b": null,
+            "dimension": "qualifier",
+            "couldExplainGap": true
+          }
+        ],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Sahil Barua",
+        "predicate": "term_start_date",
+        "raw_value": "October 13, 2021",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "Term: Five years with effect from October 13, 2021"
+      },
+      "claim_b": {
+        "subject": "Sahil Barua",
+        "predicate": "signed_declaration_date",
+        "raw_value": "July 05, 2024",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "Sahil Barua Date: July 05, 2024 Managing Director and Chief Executive Officer Place: Goa DIN: 05131571"
+      }
+    },
+    {
+      "label": "unrelated",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims refer to different attributes of the same entity; one identifies the Corporate Identity Number while the other identifies a page number in a document.",
+      "context_differences": [
+        "definition"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern number but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery Limited",
+        "predicate": "corporate_identity_number",
+        "raw_value": "U63090DL2011PLC221234",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
+        "original_statement": "CORPORATE IDENTITY NUMBER: U63090DL2011PLC221234"
+      },
+      "claim_b": {
+        "subject": "Delhivery Limited",
+        "predicate": "page_number",
+        "raw_value": "102",
+        "period_label": null,
+        "scope": null,
+        "status": "accepted",
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "102 Delhivery Limited"
+      }
+    },
+    {
+      "label": "unrelated",
+      "method": "model",
+      "method_version": "checks@2+relationship-classify@1",
+      "model": "gemini-3.1-flash-lite-preview",
+      "rationale": "The claims describe two distinct corporate initiatives: one regarding training and upskilling programs and the other regarding the implementation of an occupational health and safety management system. These are separate operational activities and do not conflict or corroborate each other.",
+      "context_differences": [
+        "scope"
+      ],
+      "uncertainty_reasons": [],
+      "deterministic_checks": {
+        "notes": [
+          "at least one claim states no figure, so no numerical comparison was made"
+        ],
+        "value": null,
+        "version": "checks@2",
+        "predicate": {
+          "reason": "both concern and but are not the same measure",
+          "relation": "related_form",
+          "comparable": false
+        },
+        "scaleRatio": null,
+        "entityMatch": "same",
+        "retrievedBy": [
+          "exact",
+          "semantic"
+        ],
+        "bothAccepted": true,
+        "sameDocument": false,
+        "worthComparing": true,
+        "semanticDistance": null,
+        "contextDifferences": [
+          {
+            "a": "method: Delhivery Academy",
+            "b": null,
+            "dimension": "qualifier",
+            "couldExplainGap": true
+          }
+        ],
+        "sharedSourceBlocks": []
+      },
+      "claim_a": {
+        "subject": "Delhivery",
+        "predicate": "invested_in_training_and_upskilling",
         "raw_value": null,
-        "period_label": "FY24",
-        "scope": null,
-        "status": "accepted",
-        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-        "original_statement": "The Annual Return in Form MGT - 7 for the FY24 pursuant to Section 92(3) read with Section 134(3)(a) of the Act and Rules made thereunder, is available on the website of your Company at https://www.delhivery.com/company/investor-relations."
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "period_type",
-        "assertion_status",
-        "unit"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 108.38 INR, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "39.5",
-            "40.5"
-          ],
-          "intervalB": [
-            "148.375",
-            "148.385"
-          ],
-          "difference": "108.38",
-          "relativeDifference": "0.7304218897425529047"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "both concern cost but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.5625334177135489,
-        "contextDifferences": [
-          {
-            "a": "FY25",
-            "b": "Last one year",
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": "fiscal_year",
-            "b": "range",
-            "dimension": "period_type",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "Cr",
-            "b": "INR",
-            "dimension": "unit",
-            "couldExplainGap": true
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
-      },
-      "claim_b": {
-        "subject": "weighted_average_cost_of_acquisition",
-        "predicate": "weighted_average_cost_of_acquisition_last_one_year",
-        "raw_value": "148.38",
-        "period_label": "Last one year",
-        "scope": null,
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "Last one year | 148.38 | 3.28 | Nil** – 400.00"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "period_type",
-        "scope",
-        "assertion_status",
-        "unit",
-        "currency"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "INR and percent are different quantities",
-          "agreement": "incomparable",
-          "intervalA": null,
-          "intervalB": null,
-          "difference": null,
-          "relativeDifference": null
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "the predicates have nothing in common",
-          "relation": "unrelated",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.5657170583520885,
-        "contextDifferences": [
-          {
-            "a": "FY25",
-            "b": null,
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": "fiscal_year",
-            "b": "unknown",
-            "dimension": "period_type",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "pre-offer paid-up equity share capital",
-            "dimension": "scope",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "Cr",
-            "b": "percent",
-            "dimension": "unit",
-            "couldExplainGap": true
-          },
-          {
-            "a": "INR",
-            "b": null,
-            "dimension": "currency",
-            "couldExplainGap": false
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
-      },
-      "claim_b": {
-        "subject": "CA Swift Investments",
-        "predicate": "pre_offer_shareholding_percentage",
-        "raw_value": "7.18",
-        "period_label": null,
-        "scope": "pre-Offer paid-up Equity Share capital",
-        "status": "accepted",
-        "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "CA Swift Investments | 46,131,800 | 7.18"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "period_type",
-        "assertion_status",
-        "unit",
-        "currency"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [
-          "at least one claim states no figure, so no numerical comparison was made"
-        ],
-        "value": null,
-        "version": "checks@1",
-        "predicate": {
-          "reason": "both concern cost but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.5663334677119924,
-        "contextDifferences": [
-          {
-            "a": "FY25",
-            "b": null,
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": "fiscal_year",
-            "b": "unknown",
-            "dimension": "period_type",
-            "couldExplainGap": true
-          },
-          {
-            "a": null,
-            "b": "reported",
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "Cr",
-            "b": "%",
-            "dimension": "unit",
-            "couldExplainGap": true
-          },
-          {
-            "a": "INR",
-            "b": null,
-            "dimension": "currency",
-            "couldExplainGap": false
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "40",
-        "period_label": "FY25",
-        "scope": null,
-        "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY25 | 40"
-      },
-      "claim_b": {
-        "subject": "cost reduction",
-        "predicate": "cost_reduction_percentage",
-        "raw_value": "5-15%",
         "period_label": null,
         "scope": null,
         "status": "accepted",
-        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
-        "original_statement": "5-15%\nby tapping into Axle, a\ncost reduction for"
-      }
-    },
-    {
-      "label": "unrelated",
-      "method": "deterministic",
-      "method_version": "checks@1+relationship-classify@1",
-      "model": null,
-      "rationale": "the two claims are about different entities",
-      "context_differences": [
-        "period",
-        "period_type",
-        "assertion_status",
-        "unit"
-      ],
-      "uncertainty_reasons": [],
-      "deterministic_checks": {
-        "notes": [],
-        "value": {
-          "reason": "the figures differ by 127.88 INR, more than either rounding allows",
-          "agreement": "disagree",
-          "intervalA": [
-            "139.875",
-            "139.885"
-          ],
-          "intervalB": [
-            "11.5",
-            "12.5"
-          ],
-          "difference": "127.88",
-          "relativeDifference": "0.91421218187017443523"
-        },
-        "version": "checks@1",
-        "predicate": {
-          "reason": "both concern cost but are not the same measure",
-          "relation": "related_form",
-          "comparable": false
-        },
-        "scaleRatio": null,
-        "entityMatch": "different",
-        "retrievedBy": [
-          "semantic"
-        ],
-        "bothAccepted": true,
-        "sameDocument": false,
-        "worthComparing": false,
-        "semanticDistance": 0.4636983871459618,
-        "contextDifferences": [
-          {
-            "a": "one year preceding the date of this Prospectus",
-            "b": "FY26",
-            "dimension": "period",
-            "couldExplainGap": true
-          },
-          {
-            "a": "range",
-            "b": "fiscal_year",
-            "dimension": "period_type",
-            "couldExplainGap": true
-          },
-          {
-            "a": "reported",
-            "b": null,
-            "dimension": "assertion_status",
-            "couldExplainGap": true
-          },
-          {
-            "a": "INR",
-            "b": "Cr",
-            "dimension": "unit",
-            "couldExplainGap": true
-          }
-        ],
-        "sharedSourceBlocks": []
-      },
-      "claim_a": {
-        "subject": "CA Swift Investments",
-        "predicate": "weighted_average_cost_of_acquisition",
-        "raw_value": "139.88",
-        "period_label": "one year preceding the date of this Prospectus",
-        "scope": null,
-        "status": "accepted",
         "document": "01-delhivery-prospectus-2022-excerpt.pdf",
-        "original_statement": "CA Swift Investments | 46,131,800 | 139.88"
+        "original_statement": "We have also invested significantly in training and upskilling front-line operations personnel via the Delhivery Academy, with the aim of building our next generation of operational leadership from within the line organization."
       },
       "claim_b": {
-        "subject": "Cost of performance-based options (3)",
-        "predicate": "cost",
-        "raw_value": "12",
-        "period_label": "FY26",
-        "scope": null,
+        "subject": "Delhivery",
+        "predicate": "occupational_health_and_safety_management_system_implementation",
+        "raw_value": "100%",
+        "period_label": null,
+        "scope": "all facilities & employees",
         "status": "accepted",
-        "document": "03-delhivery-q4-fy24-earnings-presentation.pdf",
-        "original_statement": "FY26 | 12"
+        "document": "02-delhivery-annual-report-fy24-excerpt.pdf",
+        "original_statement": "Yes, occupational health & safety management system has been implemented by Delhivery & has 100% coverage for all facilities & employees."
       }
     }
   ]

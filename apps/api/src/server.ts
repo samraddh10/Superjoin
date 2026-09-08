@@ -25,6 +25,7 @@ import { registerDocumentRoutes } from './routes/documents.ts';
 import { registerFactRoutes } from './routes/facts.ts';
 import { registerRelationshipRoutes } from './routes/relationships.ts';
 import { DEFAULT_STALLED_AFTER_MS, registerRunRoutes } from './routes/runs.ts';
+import { registerSettingsRoutes } from './routes/settings.ts';
 
 /**
  * Recorded on every run so an old result stays interpretable after the code moves on.
@@ -95,6 +96,18 @@ export async function buildServer(
   await registerDocumentRoutes(app, { ingestion, stalledAfterMs: DEFAULT_STALLED_AFTER_MS });
   await registerFactRoutes(app, { ingestion });
   await registerRelationshipRoutes(app, { ingestion });
+
+  /**
+   * The provider toggle.
+   *
+   * The API reports which providers have credentials and records which one is selected;
+   * it never calls a model itself and never returns a key. `configuredProviders` reads
+   * the same config the worker does, so the two cannot disagree about what is available.
+   */
+  await registerSettingsRoutes(app, {
+    ingestion,
+    models: { bedrock: config.bedrockModelId, groq: config.groqModel },
+  });
 
   /**
    * Liveness: the process is up and serving. Deliberately does no dependency work, so a

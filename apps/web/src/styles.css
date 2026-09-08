@@ -623,3 +623,59 @@ dl.pairs dd {
   background: var(--accent-soft);
   color: var(--accent);
 }
+
+/* The inference provider switch in the header.
+
+   A segmented control rather than a checkbox: there are two providers now and there may
+   be three later, and a checkbox that means "Groq" only reads correctly while there are
+   exactly two. */
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.segment {
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 5px 10px;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.segment:last-child {
+  border-right: 0;
+}
+
+.segment:hover:not(:disabled):not([aria-pressed='true']) {
+  background: var(--surface-alt, rgba(0, 0, 0, 0.04));
+}
+
+.segment[aria-pressed='true'] {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Not hidden, because "why is there no Groq option" is a question the interface should
+   answer rather than raise. */
+.segment:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.provider-toggle {
+  gap: 6px;
+}
+
+/* The active model name beside the switch. Truncated rather than allowed to push the
+   collection chooser off the header on a narrow window. */
+.provider-model {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

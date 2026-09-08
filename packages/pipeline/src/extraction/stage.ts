@@ -45,13 +45,47 @@ export interface ExtractionStageOptions {
   readonly concurrency?: number;
   /** Give up after this many consecutive throttled chunks. */
   readonly maxConsecutiveFailures?: number;
+  /**
+   * Give up after this many consecutive failed chunks of any kind.
+   *
+   * The backstop to `maxConsecutiveFailures`, and deliberately looser. Backing off from a
+   * rate limit protects a quota that further calls would only burn, so that ceiling stays
+   * strict. A malformed reply is usually a flake — the dense financial pages that return
+   * `claims: null` in one run extract cleanly in the next — so the chunks queued behind
+   * one are worth attempting, and malformed replies count only here.
+   *
+   * Counting every kind rather than only malformed ones is what makes this a backstop: a
+   * document failing alternately on throttling and bad JSON would otherwise fill neither
+   * counter and grind through every remaining chunk making doomed calls.
+   */
+  readonly maxConsecutiveAny?: number;
 }
 
 const DEFAULTS = {
   tokenBudget: 1_500_000,
   concurrency: 2,
   maxConsecutiveFailures: 4,
+  maxConsecutiveAny: 12,
 } as const;
+
+/** How a failed chunk should be counted against the two give-up ceilings. */
+export type FailureRun = 'throttled' | 'malformed' | 'other';
+
+/**
+ * Which run of failures a thrown error belongs to.
+ *
+ * The distinction is the whole point of counting them separately: a provider refusing to
+ * serve us and a provider serving something unreadable look alike at the call site and
+ * call for opposite responses.
+ */
+export function classifyFailure(error: unknown): FailureRun {
+  const kind = error instanceof ModelError ? error.kind : null;
+  if (kind === 'provider_rate_limited') return 'throttled';
+  if (kind === 'schema_violation' || kind === 'schema_violation_after_repair') {
+    return 'malformed';
+  }
+  return 'other';
+}
 
 export interface ExtractionSummary {
   readonly chunksTotal: number;
@@ -155,6 +189,7 @@ export async function extractDocument(
   const tokenBudget = options.tokenBudget ?? DEFAULTS.tokenBudget;
   const concurrency = options.concurrency ?? DEFAULTS.concurrency;
   const maxConsecutive = options.maxConsecutiveFailures ?? DEFAULTS.maxConsecutiveFailures;
+  const maxAny = options.maxConsecutiveAny ?? DEFAULTS.maxConsecutiveAny;
 
   const blocks = await loadBlocks(db, context.job.documentId);
   const blocksById = new Map(blocks.map((block) => [block.id, block as EvidenceBlock]));
@@ -205,7 +240,18 @@ export async function extractDocument(
   let rejected = 0;
   let promptTokens = 0;
   let completionTokens = 0;
+  /**
+   * Two runs of failures, counted apart.
+   *
+   * `consecutive` is the strict one: the provider refusing to serve us, where every
+   * further call is wasted quota. `consecutiveAny` is the backstop across all kinds.
+   * A reply that arrived and could not be read increments only the backstop, because the
+   * next chunk may well succeed — counting it as a refusal is what let four scattered
+   * schema flakes abandon seventeen unattempted chunks, including the restated financial
+   * statements, the densest pages in the set.
+   */
   let consecutive = 0;
+  let consecutiveAny = 0;
   let stoppedEarly = false;
 
   const stop = async (reason: string, failureKind: string): Promise<void> => {
@@ -263,7 +309,15 @@ export async function extractDocument(
 
       if (consecutive >= maxConsecutive) {
         await stop(
-          `stopped after ${consecutive} consecutive failed chunks; ${chunks.length - processed - failed} chunks were not attempted`,
+          `stopped after ${consecutive} consecutive chunks the provider would not serve; ${chunks.length - processed - failed} chunks were not attempted`,
+          'extraction_abandoned',
+        );
+        return;
+      }
+
+      if (consecutiveAny >= maxAny) {
+        await stop(
+          `stopped after ${consecutiveAny} consecutive failed chunks; ${chunks.length - processed - failed} chunks were not attempted`,
           'extraction_abandoned',
         );
         return;
@@ -278,11 +332,17 @@ export async function extractDocument(
         await runOne(chunk);
         processed += 1;
         consecutive = 0;
+        consecutiveAny = 0;
       } catch (error) {
         failed += 1;
-        consecutive += 1;
 
         const modelError = error instanceof ModelError ? error : null;
+        // The provider refusing to serve and a provider that answered badly are counted
+        // apart: only the first means every further call is wasted quota.
+        const run = classifyFailure(error);
+
+        consecutiveAny += 1;
+        if (run !== 'malformed') consecutive += 1;
 
         await recordIssue(db, context.job.runId, {
           stage: 'extracting',

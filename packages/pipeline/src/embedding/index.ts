@@ -1,7 +1,7 @@
 /**
  * Claim embeddings, computed locally.
  *
- * OpenRouter's catalogue is chat completions only and contains no embedding models at
+ * Bedrock does serve embedding models, but routing every chunk of every document
  * all, so the retrieval side of plan 6.1 cannot use the same provider. It runs here
  * instead, through `@huggingface/transformers`, with a symmetric sentence-similarity
  * model at 768 dimensions so the existing `vector(768)` column is unchanged.

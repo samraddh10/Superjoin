@@ -95,12 +95,20 @@ export {
 } from './processor.ts';
 
 export {
+  BedrockClient,
+  GroqClient,
   ModelError,
-  OpenRouterClient,
+  SwitchingClient,
+  configuredProviders,
   createModelClient,
   extractJson,
   imageContentPart,
+  withRetries,
+  type BedrockOptions,
   type ChatMessage,
+  type GroqOptions,
+  type ProviderEntry,
+  type SwitchingClientOptions,
   type CompletionProvider,
   type CompletionRequest,
   type CompletionResult,

@@ -63,12 +63,30 @@ export interface ComparisonStageOptions {
   readonly topK?: number;
   /** Tokens this stage may spend on one document. */
   readonly tokenBudget?: number;
+  /**
+   * How long to wait out a rate limit, and how many times. Overridable so the throttle
+   * path can be tested without the test spending a minute and a half asleep.
+   */
+  readonly cooldownMs?: number;
+  readonly cooldownAttempts?: number;
 }
 
 const DEFAULTS = {
   topK: 15,
   tokenBudget: 400_000,
 } as const;
+
+/**
+ * How long to wait out a rate limit, and how many times.
+ *
+ * Sized for a per-minute quota, which is the shape free tiers use. Two pauses is enough to
+ * cross a minute boundary twice; a third would mean the limit is per day, and waiting for
+ * tomorrow inside a job is a stalled worker rather than patience.
+ */
+const COOLDOWN_MS = 45_000;
+const COOLDOWN_ATTEMPTS = 2;
+
+
 
 export interface ComparisonSummary {
   readonly pairsConsidered: number;
@@ -168,6 +186,55 @@ function fromChecks(checks: DeterministicChecks, extraUncertainty: readonly stri
   };
 }
 
+/**
+ * How likely a pair is to be one of the four cases worth reporting.
+ *
+ * Read off the deterministic checks, which are already computed and cost nothing. Higher
+ * is asked first. The weights are ordinal rather than calibrated: what matters is that a
+ * pair which could be a corroboration outranks one that could only ever be `unrelated`,
+ * not the precise gap between them.
+ */
+export function promiseOf(checks: DeterministicChecks): number {
+  // A pair the gate refuses never reaches the classifier, so its order is irrelevant; it
+  // sorts last so it cannot displace a pair that would have been asked.
+  if (!checks.worthComparing) return -1;
+
+  let score = 0;
+
+  // Two documents saying the same thing is the entire point. One document disagreeing
+  // with itself is a real finding but not the comparison this system is asked to make.
+  if (!checks.sameDocument) score += 8;
+
+  // Naming the same entity and the same measure is what makes a pair comparable at all.
+  if (checks.entityMatch === 'same') score += 6;
+  if (checks.predicate.relation === 'same') score += 5;
+  else if (checks.predicate.relation === 'modifier_variant') score += 2;
+
+  // A conclusion drawn from a claim held for review is provisional, so those pairs are
+  // worth asking about only once the confident ones have been.
+  if (checks.bothAccepted) score += 4;
+
+  // Both sides carrying a figure is what lets agreement or conflict be established rather
+  // than discussed. A pair with no numbers can still be corroborated, so this ranks it
+  // lower rather than excluding it.
+  if (checks.value !== null) {
+    score += 3;
+    // Agreement is a corroboration; disagreement is a conflict or a reconciliation. Either
+    // is one of the four cases, and both beat a pair whose figures cannot be compared.
+    if (checks.value.agreement === 'agree' || checks.value.agreement === 'disagree') score += 3;
+  }
+
+  // Evidence read twice is not two sources, and a corroboration resting on it is
+  // downgraded later anyway — so it is a poor use of a call while others are unasked.
+  if (checks.sharedSourceBlocks.length > 0) score -= 5;
+
+  // A clean power-of-ten gap usually means a scale word was misread, which is worth the
+  // classifier's attention rather than a silent deterministic pass.
+  if (checks.scaleRatio !== null) score += 2;
+
+  return score;
+}
+
 export async function compareDocument(
   context: ProcessingContext,
   options: ComparisonStageOptions,
@@ -199,6 +266,10 @@ export async function compareDocument(
   let written = 0;
   let promptTokens = 0;
   let completionTokens = 0;
+  const cooldownMs = options.cooldownMs ?? COOLDOWN_MS;
+  /** Pauses left to spend on a provider that is throttling rather than refusing. */
+  let cooldownsLeft = options.cooldownAttempts ?? COOLDOWN_ATTEMPTS;
+  let considered = 0;
 
   if (candidates.pairs.length === 0) {
     return {
@@ -238,8 +309,34 @@ export async function compareDocument(
     .where(eq(processingRuns.id, context.job.runId))
     .limit(1);
 
-  for (const pair of candidates.pairs) {
-    const checks = runDeterministicChecks(pair.a, pair.b);
+  /**
+   * Decide the order before spending anything, most promising pair first.
+   *
+   * The classifier is the scarcest resource in this system: on a metered model the budget
+   * runs out long before the candidates do, and whatever is left over falls back to the
+   * deterministic answer, which abstains by design. So the order the pairs are visited in
+   * decides which of the four cases the run is able to find at all.
+   *
+   * Retrieval order is not that order. It is the order pgvector returned neighbours in,
+   * which ranks by how a claim *reads*, and a run that took the first fifty of those spent
+   * its entire budget on pairs that mostly turned out to be unrelated.
+   *
+   * `promise` therefore scores what the deterministic checks already know. A pair of
+   * accepted claims about one entity, one measure and two documents, each carrying a
+   * figure, is the shape every one of corroborates, contradicts and reconciled_by_context
+   * takes; a pair missing any of those cannot be any of them. Scoring is not deciding —
+   * the classifier still reaches its own verdict, and this only changes which questions it
+   * is asked while it can still be asked any.
+   */
+  const scored = candidates.pairs
+    .map((pair) => {
+      const checks = runDeterministicChecks(pair.a, pair.b);
+      return { pair, checks, promise: promiseOf(checks) };
+    })
+    .sort((a, b) => b.promise - a.promise);
+
+  for (const { pair, checks } of scored) {
+    considered += 1;
     let verdict: Verdict;
 
     if (!checks.worthComparing) {
@@ -249,50 +346,78 @@ export async function compareDocument(
     } else if (promptTokens + completionTokens >= tokenBudget) {
       verdict = fromChecks(checks, ['the classification budget for this document was exhausted']);
     } else {
-      try {
-        const classified = await classifyPair(
-          pair.a,
-          pair.b,
-          checks,
-          handlesForPair(pair, evidenceByClaim),
-          { client: options.client },
-        );
+      /**
+       * Asked until answered, paused, or failed. Never abandoned in favour of the checks.
+       *
+       * A pair reaches the model precisely because the deterministic checks could not
+       * settle it, so a verdict written from those checks after a failed call would be a
+       * guess wearing the shape of a considered answer. The loop exists for the one
+       * failure that is neither an answer nor a dead end: being rate-limited.
+       *
+       * A provider that is down stays down, and failing the run is right. A free tier
+       * that refuses this minute will accept the next one, and failing there throws away
+       * the rest of the collection over a wait — which is what happened: four quick 429s
+       * ended a stage with sixteen hundred pairs still unasked. So a throttle buys a
+       * cooldown and another attempt at the same pair, twice. Bounded, because a third
+       * pause on a quota that resets tomorrow is a stalled worker rather than patience,
+       * and every attempt has already been through the client's own retries and their
+       * backoff before reaching here.
+       */
+      for (;;) {
+        try {
+          const classified = await classifyPair(
+            pair.a,
+            pair.b,
+            checks,
+            handlesForPair(pair, evidenceByClaim),
+            { client: options.client },
+          );
 
-        verdict = {
-          label: classified.label,
-          rationale: classified.rationale,
-          supportingEvidenceIds: classified.supportingEvidenceIds,
-          differingContext: classified.differingContext,
-          uncertaintyReasons: classified.uncertaintyReasons,
-          method: 'model',
-          modelName: classified.servedByModel,
-          promptTokens: classified.promptTokens,
-          completionTokens: classified.completionTokens,
-        };
+          verdict = {
+            label: classified.label,
+            rationale: classified.rationale,
+            supportingEvidenceIds: classified.supportingEvidenceIds,
+            differingContext: classified.differingContext,
+            uncertaintyReasons: classified.uncertaintyReasons,
+            method: 'model',
+            modelName: classified.servedByModel,
+            promptTokens: classified.promptTokens,
+            completionTokens: classified.completionTokens,
+          };
 
-        promptTokens += classified.promptTokens;
-        completionTokens += classified.completionTokens;
-      } catch (error) {
-        // A pair the classifier could not answer is not labelled from the checks alone.
-        // The checks were never sufficient — that is why the pair reached the model — so
-        // a verdict written here would be a guess wearing the same shape as a considered
-        // answer. The run fails instead, and says why.
-        const modelError = error instanceof ModelError ? error : null;
-        const retryable = modelError?.retryable ?? true;
+          promptTokens += classified.promptTokens;
+          completionTokens += classified.completionTokens;
+          break;
+        } catch (error) {
+          const modelError = error instanceof ModelError ? error : null;
+          const retryable = modelError?.retryable ?? true;
 
-        await recordIssue(db, context.job.runId, {
-          stage: 'comparing',
-          failureKind: modelError?.kind ?? 'classification_failed',
-          failureClass: retryable ? 'transient' : 'permanent',
-          message: `pair ${pair.a.id} / ${pair.b.id}: ${(error as Error).message.slice(0, 300)}`,
-        });
+          await recordIssue(db, context.job.runId, {
+            stage: 'comparing',
+            failureKind: modelError?.kind ?? 'classification_failed',
+            failureClass: retryable ? 'transient' : 'permanent',
+            message: `pair ${pair.a.id} / ${pair.b.id}: ${(error as Error).message.slice(0, 300)}`,
+          });
 
-        throw new ProcessingError(
-          `classifier unavailable for pair ${pair.a.id} / ${pair.b.id}: ${(error as Error).message}`,
-          modelError?.kind ?? 'classification_failed',
-          retryable ? 'transient' : 'permanent',
-          'comparing',
-        );
+          if (modelError?.kind === 'provider_rate_limited' && cooldownsLeft > 0) {
+            cooldownsLeft -= 1;
+            await recordIssue(db, context.job.runId, {
+              stage: 'comparing',
+              failureKind: 'classification_cooldown',
+              failureClass: 'transient',
+              message: `throttled on pair ${pair.a.id} / ${pair.b.id}; pausing ${Math.round(cooldownMs / 1000)}s before asking again rather than failing with ${scored.length - considered} pairs still to compare`,
+            });
+            await new Promise((resolve) => setTimeout(resolve, cooldownMs));
+            continue;
+          }
+
+          throw new ProcessingError(
+            `classifier unavailable for pair ${pair.a.id} / ${pair.b.id}: ${(error as Error).message}`,
+            modelError?.kind ?? 'classification_failed',
+            retryable ? 'transient' : 'permanent',
+            'comparing',
+          );
+        }
       }
     }
 

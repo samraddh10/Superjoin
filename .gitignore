@@ -9,6 +9,7 @@ build/
 storage/
 .cache/
 starter-datasets.zip
+.devenv/*
 
 # TypeScript build info
 *.tsbuildinfo
@@ -17,3 +18,8 @@ starter-datasets.zip
 .devenv*
 devenv.local.nix
 .direnv
+
+# AWS credential exports. Never committed.
+bedrock-long-term-api-key.csv
+*credentials*.csv
+*api-key*.csv

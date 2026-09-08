@@ -4,7 +4,7 @@ How a chunk of parsed text becomes a stored claim with evidence a reviewer can o
 
 ## The contract
 
-`packages/pipeline/src/extraction/contract.ts` holds one Zod schema and one JSON Schema. The JSON Schema is sent as OpenRouter's `response_format`; the Zod schema validates whatever comes back. Both live in the same file because they are one contract in two encodings, and separating them is how they stop matching.
+`packages/pipeline/src/extraction/contract.ts` holds one Zod schema and one JSON Schema. The JSON Schema is sent as a Bedrock tool input schema under a required `toolChoice`; the Zod schema validates whatever comes back. Both live in the same file because they are one contract in two encodings, and separating them is how they stop matching.
 
 A claim carries subject, an open snake_case predicate, the original statement, the raw value as printed, a decimal-string numeric value, currency, scale, unit, period label and type, scope, assertion status, qualifiers, cited block handles, and the quote.
 
