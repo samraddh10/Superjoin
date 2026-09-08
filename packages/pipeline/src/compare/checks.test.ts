@@ -187,3 +187,53 @@ describe('deterministicLabel', () => {
     expect(decided.rationale).toContain('not expected to agree');
   });
 });
+
+/**
+ * The regression for this system's only false contradiction.
+ *
+ * Extraction returned `subject: "document"` for both a prospectus filing date and an
+ * earnings deck's date. Both sides then had the same subject text and the same predicate
+ * with different values, and the classifier called it a contradiction — "a document cannot
+ * have two distinct dates of issuance", which is true and irrelevant, because these are
+ * two different documents.
+ *
+ * Scoping the entity was not enough on its own: the classifier reads the subject text, not
+ * only the resolved entity. The pair has to be refused by the gate that decides what the
+ * classifier is shown at all.
+ */
+describe('placeholder subjects across documents', () => {
+  const dated = (documentId: string, value: string): ComparableClaim => ({
+    ...claim(),
+    id: `c-${documentId}`,
+    documentId,
+    entityId: null,
+    subject: 'document',
+    predicate: 'date',
+    rawValue: value,
+    numericValue: null,
+  });
+
+  it('refuses to compare two documents that both call their subject "document"', () => {
+    const checks = runDeterministicChecks(dated('doc-1', 'May 14, 2022'), dated('doc-2', 'May 17, 2024'));
+
+    expect(checks.worthComparing).toBe(false);
+    expect(checks.notes.join(' ')).toContain('name the document itself');
+    // Whatever the fallback calls it, it must not be a conflict: asserting that two
+    // documents disagree because both called their subject "document" is the error.
+    expect(['unrelated', 'insufficient_context']).toContain(deterministicLabel(checks).label);
+  });
+
+  it('still compares two placeholder claims inside one document', () => {
+    // Within a file, "this presentation" does name one thing, so the pair is not refused
+    // on these grounds — same-document handling takes over from here.
+    const checks = runDeterministicChecks(dated('doc-1', 'May 14, 2022'), dated('doc-1', 'May 17, 2024'));
+    expect(checks.notes.join(' ')).not.toContain('name the document itself');
+  });
+
+  it('leaves real subjects comparable across documents', () => {
+    const a = { ...dated('doc-1', '8,142 Cr'), subject: 'Delhivery Limited', predicate: 'revenue' };
+    const b = { ...dated('doc-2', '8,142 Cr'), subject: 'Delhivery Limited', predicate: 'revenue' };
+    // This is the pair corroboration depends on; the guard must not touch it.
+    expect(runDeterministicChecks(a, b).worthComparing).toBe(true);
+  });
+});

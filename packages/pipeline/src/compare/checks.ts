@@ -19,6 +19,7 @@
  */
 
 import type { AssertionStatus, PeriodType, Qualifier } from '../extraction/contract.ts';
+import { isGenericSubject } from '../normalize/entities.ts';
 import {
   compareContext,
   normalizeScope,
@@ -179,6 +180,27 @@ export function runDeterministicChecks(
     notes.push(`the reporting scope differs: ${scopeA} against ${scopeB}`);
   }
 
+  /**
+   * A placeholder subject cannot identify anything across documents.
+   *
+   * Extraction sometimes returns the document's own self-reference — "document", "this
+   * presentation" — as the subject. Two such claims from two files share a subject *word*
+   * and nothing else, and the classifier, shown two identical subjects with the same
+   * predicate and different values, quite reasonably calls it a contradiction. It produced
+   * exactly that: the prospectus's filing date against the earnings deck's, read as one
+   * document holding two dates.
+   *
+   * Scoping the entity was not enough, because the classifier reads the subject text too.
+   * The pair is refused here instead, which is the gate that decides what it ever sees.
+   */
+  const genericAcrossDocuments =
+    !sameDocument && isGenericSubject(a.subject) && isGenericSubject(b.subject);
+  if (genericAcrossDocuments) {
+    notes.push(
+      'both subjects name the document itself rather than an entity, so the two are not comparable across files',
+    );
+  }
+
   const bothAccepted = a.status === 'accepted' && b.status === 'accepted';
   if (!bothAccepted) {
     notes.push(
@@ -199,7 +221,8 @@ export function runDeterministicChecks(
     worthComparing:
       entityMatch !== 'different' &&
       predicate.relation !== 'unrelated' &&
-      predicate.relation !== 'explicitly_distinct',
+      predicate.relation !== 'explicitly_distinct' &&
+      !genericAcrossDocuments,
     notes,
   };
 }
