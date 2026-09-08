@@ -68,7 +68,7 @@ export function App() {
     <div className="shell">
       <header className="topbar">
         <div className="brand">
-          Superjoin
+          TruthMesh
           <span>facts and relationships across documents</span>
         </div>
 

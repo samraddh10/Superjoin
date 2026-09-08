@@ -1,4 +1,4 @@
-# Superjoin
+# TruthMesh
 
 A fact knowledge layer over PDFs. Upload unfamiliar documents; get back claims with the
 passage that supports each one, and explained relationships between claims that different

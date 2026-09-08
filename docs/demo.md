@@ -24,7 +24,7 @@ is the one thing that would undermine everything else.
 
 **Show:** the Documents tab. Drag in the three PDFs. Let the first status appear.
 
-> "Superjoin takes unfamiliar PDFs and turns them into claims you can check, and
+> "TruthMesh takes unfamiliar PDFs and turns them into claims you can check, and
 > relationships between what different documents say. Here are three Delhivery filings —
 > a 2022 prospectus, the FY24 annual report, and the Q4 earnings deck. Nothing about them
 > is configured anywhere; the pipeline has no knowledge of these files."
