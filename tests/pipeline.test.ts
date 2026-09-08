@@ -332,7 +332,14 @@ describe.skipIf(!reachable)('extraction, normalization and comparison', () => {
 
   it('retrieves the cross-document pair and explains it', async () => {
     const client = new ScriptedClient([['Claim A', classification]]);
-    const summary = await compareDocument(contextFor(report), { client });
+    // This pair is a plain corroboration, which the checks now settle without a call, so
+    // the fast path is turned off here: what this test is for is the classified route —
+    // retrieval, evidence handles, a model verdict, and a stored explanation that points
+    // at quotes. The shortcut over the same pair is the test below.
+    const summary = await compareDocument(contextFor(report), {
+      client,
+      fastPathCorroborations: false,
+    });
 
     expect(summary.pairsConsidered).toBe(1);
     expect(summary.exactPairs).toBe(1);
@@ -356,7 +363,10 @@ describe.skipIf(!reachable)('extraction, normalization and comparison', () => {
 
   it('does not duplicate the relationship when comparison runs again', async () => {
     const client = new ScriptedClient([['Claim A', classification]]);
-    await compareDocument(contextFor(report), { client });
+    const summary = await compareDocument(contextFor(report), {
+      client,
+      fastPathCorroborations: false,
+    });
 
     const stored = await database.db
       .select({ id: relationships.id })
@@ -364,6 +374,39 @@ describe.skipIf(!reachable)('extraction, normalization and comparison', () => {
       .where(eq(relationships.collectionId, collectionId));
 
     expect(stored).toHaveLength(1);
+
+    // Nor pay for it again. The unique index always made the second write a no-op, but
+    // the call that produced the duplicate verdict had already been made and charged.
+    expect(summary.resumedFromStore).toBe(1);
+    expect(client.calls).toHaveLength(0);
+  }, 60_000);
+
+  it('settles a plain corroboration without asking the model', async () => {
+    // Two accepted claims, two documents, two independent blocks, one entity, one measure,
+    // one stated period, and figures that agree after a recorded conversion. There is no
+    // open question for a classifier to read, and it used to be asked anyway.
+    await database.db.delete(relationships).where(eq(relationships.collectionId, collectionId));
+
+    const client = new ScriptedClient([['Claim A', classification]]);
+    const summary = await compareDocument(contextFor(report), { client });
+
+    expect(client.calls).toHaveLength(0);
+    expect(summary.classifiedByModel).toBe(0);
+    expect(summary.classifiedDeterministically).toBe(1);
+
+    const [stored] = await database.db
+      .select({
+        label: relationships.label,
+        method: relationships.method,
+        supporting: relationships.supportingEvidenceIds,
+      })
+      .from(relationships)
+      .where(eq(relationships.collectionId, collectionId));
+
+    expect(stored?.label).toBe('corroborates');
+    expect(stored?.method).toBe('deterministic');
+    // A shortcut, not a shrug: the verdict still points at the quotes it compared.
+    expect((stored?.supporting as string[]).length).toBeGreaterThan(0);
   }, 60_000);
 
   it('fails the run when the classifier cannot be reached, rather than labelling anyway', async () => {
@@ -372,16 +415,28 @@ describe.skipIf(!reachable)('extraction, normalization and comparison', () => {
     // shape as a considered answer, and no reader could tell the two apart.
     await database.db.delete(relationships).where(eq(relationships.collectionId, collectionId));
 
+    let attempts = 0;
     const unavailable: CompletionProvider = {
       model: 'stub/unavailable',
       complete() {
+        attempts += 1;
         return Promise.reject(new ModelError('quota exhausted', 'provider_rate_limited', true));
       },
     };
 
-    const failure = await compareDocument(contextFor(report), { client: unavailable }).catch(
-      (error: unknown) => error,
-    );
+    // A throttle buys a pause and another attempt at the same pair, so the failure only
+    // arrives once those are spent. Zero milliseconds here: the cooldown's length is not
+    // what is under test, and the real one would put this test to sleep for 90 seconds.
+    // The one pair here is a plain corroboration, which the checks would settle on their
+    // own. The behaviour under test is the other path — a pair the checks could not
+    // settle, whose classifier is then unreachable — so the shortcut is turned off rather
+    // than the pair being contrived into an unsettleable one.
+    const failure = await compareDocument(contextFor(report), {
+      client: unavailable,
+      cooldownMs: 0,
+      cooldownAttempts: 2,
+      fastPathCorroborations: false,
+    }).catch((error: unknown) => error);
 
     expect(failure).toBeInstanceOf(ProcessingError);
     expect((failure as ProcessingError).stage).toBe('comparing');
@@ -393,6 +448,9 @@ describe.skipIf(!reachable)('extraction, normalization and comparison', () => {
       .where(eq(relationships.collectionId, collectionId));
 
     expect(stored).toHaveLength(0);
+    // The first ask plus one per cooldown: the pair was retried rather than abandoned,
+    // and it still failed the run rather than being labelled from the checks.
+    expect(attempts).toBe(3);
   }, 60_000);
 
   it('runs the pgvector search when an embedding model is available', async () => {

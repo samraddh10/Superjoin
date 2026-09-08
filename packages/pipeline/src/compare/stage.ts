@@ -6,14 +6,22 @@
  * own. What it writes is an argument, not a verdict: both claims stay untouched, the
  * checks are stored alongside the label, and the rationale points at quoted evidence.
  *
- * Two behaviours are worth stating because the cheaper alternative is wrong.
+ * Three behaviours are worth stating because the cheaper alternative is wrong, or because
+ * the obvious one was.
  *
- * A pair the checks can dismiss — different entities, or measures a rule exists to keep
- * apart — is labelled without a model call. That is not a shortcut around plan 6.2's
- * warning that checks are not proof: the only labels reached this way are `unrelated`,
- * which is a statement that no comparison was made, and a narrow `corroborates` for two
- * independent accepted claims whose contexts match exactly and whose figures agree after
- * a recorded conversion.
+ * A pair the checks can settle is labelled without a model call. Two shapes qualify and no
+ * others: `unrelated`, which states that no comparison was made rather than that one
+ * failed, and the narrow `corroborates` of `isPlainCorroboration` — one entity, one
+ * measure, one stated period, two documents, two independent blocks, both claims accepted,
+ * figures agreeing after a recorded conversion. That is not a shortcut around plan 6.2's
+ * warning that checks are not proof. 6.2 forbids arithmetic from proving a contradiction
+ * or a reconciliation, and neither is reachable here; what it leaves is a pair with no
+ * open question, on which the classifier was restating the checks back to us.
+ *
+ * A pair an earlier attempt already classified is not classified again. The write side was
+ * always idempotent — the unique index saw to that — but it only discovered the existing
+ * row after paying for the call that reproduced it, so every retry cost a full comparison.
+ * The verdicts are looked up before the loop instead.
  *
  * A pair the model cannot be asked about ends the run. The checks that sent the pair to
  * the model had already failed to settle it, so any label written in the model's absence
@@ -36,6 +44,7 @@ import { findCandidates, type CandidatePair } from './candidates.ts';
 import {
   CHECKS_VERSION,
   deterministicLabel,
+  isPlainCorroboration,
   runDeterministicChecks,
   type DeterministicChecks,
 } from './checks.ts';
@@ -63,6 +72,15 @@ export interface ComparisonStageOptions {
   readonly topK?: number;
   /** Tokens this stage may spend on one document. */
   readonly tokenBudget?: number;
+  /**
+   * Whether a pair the checks can settle outright skips the classifier. On by default.
+   *
+   * A switch rather than a constant because the saving has to be measurable against the
+   * thing it replaces: the same evaluation set run with this off is what says whether the
+   * shortcut agrees with the classifier on the pairs it takes over. Turning it off costs
+   * a call per corroboration and changes no label the model would not have reached.
+   */
+  readonly fastPathCorroborations?: boolean;
   /**
    * How long to wait out a rate limit, and how many times. Overridable so the throttle
    * path can be tested without the test spending a minute and a half asleep.
@@ -94,6 +112,14 @@ export interface ComparisonSummary {
   readonly semanticPairs: number;
   readonly classifiedByModel: number;
   readonly classifiedDeterministically: number;
+  /**
+   * Pairs an earlier attempt had already classified, reused rather than re-asked.
+   *
+   * Counted apart from both of the above, which describe how a verdict was reached this
+   * time. These were reached by a model, on an earlier attempt, and the row saying so is
+   * still the answer.
+   */
+  readonly resumedFromStore: number;
   readonly relationshipsWritten: number;
   readonly byLabel: Readonly<Record<string, number>>;
   readonly semanticRetrievalAvailable: boolean;
@@ -148,6 +174,55 @@ async function loadEvidenceHandles(
   return byClaim;
 }
 
+/**
+ * Pairs a previous attempt already put to the classifier, under these same versions.
+ *
+ * The stage was idempotent at the wrong end. `writeRelationship` collides with the row an
+ * earlier attempt wrote, so a replay could not duplicate anything — but it discovered that
+ * only after paying for the call that produced the identical verdict. A retried run cost a
+ * full comparison every time, and on a throttled provider a run is retried more than once.
+ *
+ * Only `model` rows count as answered. A `deterministic` row is the abstention written
+ * when the classifier could not be reached, and the whole point of the upgrade path in
+ * `writeRelationship` is that a later attempt replaces it with a considered answer.
+ *
+ * The method version is in the lookup because it is in the unique index: change the checks
+ * or the prompt and these rows describe a question that is no longer the one being asked.
+ */
+async function loadClassifiedPairs(
+  db: Database,
+  pairs: readonly CandidatePair[],
+): Promise<Map<string, RelationshipLabel>> {
+  if (pairs.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      claimAId: relationships.claimAId,
+      claimBId: relationships.claimBId,
+      label: relationships.label,
+    })
+    .from(relationships)
+    .where(
+      and(
+        eq(relationships.methodVersion, COMPARISON_METHOD_VERSION),
+        eq(relationships.method, 'model'),
+        inArray(
+          relationships.claimAId,
+          pairs.map((pair) => pair.a.id),
+        ),
+        inArray(
+          relationships.claimBId,
+          pairs.map((pair) => pair.b.id),
+        ),
+      ),
+    );
+
+  // Keyed the way candidate retrieval orders a pair — lower claim id first — which is the
+  // ordering the unique index depends on, so a row found here is this pair and not its
+  // mirror image.
+  return new Map(rows.map((row) => [`${row.claimAId}:${row.claimBId}`, row.label]));
+}
+
 /** Numbers the evidence for one pair, A first, so the handles read in a stable order. */
 function handlesForPair(
   pair: CandidatePair,
@@ -169,14 +244,27 @@ interface Verdict {
   readonly completionTokens: number;
 }
 
-/** The deterministic answer, in the shape a stored relationship needs. */
-function fromChecks(checks: DeterministicChecks, extraUncertainty: readonly string[]): Verdict {
+/**
+ * The deterministic answer, in the shape a stored relationship needs.
+ *
+ * `supportingEvidenceIds` is passed in rather than left empty for the one label that has
+ * evidence behind it. A deterministic `corroborates` was reached by comparing two figures
+ * that came from two quotes, and the interface's whole contract is that a relationship
+ * points at what it rests on — a verdict with no evidence attached reads as an assertion
+ * the reader cannot check. `unrelated` and `insufficient_context` genuinely have none:
+ * nothing was compared.
+ */
+function fromChecks(
+  checks: DeterministicChecks,
+  extraUncertainty: readonly string[],
+  supportingEvidenceIds: readonly string[] = [],
+): Verdict {
   const decided = deterministicLabel(checks);
 
   return {
     label: decided.label,
     rationale: decided.rationale,
-    supportingEvidenceIds: [],
+    supportingEvidenceIds: decided.label === 'corroborates' ? supportingEvidenceIds : [],
     differingContext: checks.contextDifferences.map((difference) => difference.dimension),
     uncertaintyReasons: [...decided.uncertaintyReasons, ...extraUncertainty],
     method: 'deterministic',
@@ -241,6 +329,7 @@ export async function compareDocument(
 ): Promise<ComparisonSummary> {
   const { db } = context.database;
   const tokenBudget = options.tokenBudget ?? DEFAULTS.tokenBudget;
+  const fastPath = options.fastPathCorroborations ?? true;
 
   const candidates = await findCandidates(db, {
     collectionId: context.job.collectionId,
@@ -263,6 +352,7 @@ export async function compareDocument(
   const byLabel: Record<string, number> = {};
   let classifiedByModel = 0;
   let classifiedDeterministically = 0;
+  let resumedFromStore = 0;
   let written = 0;
   let promptTokens = 0;
   let completionTokens = 0;
@@ -278,6 +368,7 @@ export async function compareDocument(
       semanticPairs: 0,
       classifiedByModel: 0,
       classifiedDeterministically: 0,
+      resumedFromStore: 0,
       relationshipsWritten: 0,
       byLabel,
       semanticRetrievalAvailable: candidates.embedding.available,
@@ -299,6 +390,8 @@ export async function compareDocument(
     db,
     [...new Set(candidates.pairs.flatMap((pair) => [pair.a.id, pair.b.id]))],
   );
+
+  const alreadyClassified = await loadClassifiedPairs(db, candidates.pairs);
 
   // The stage's own token spend is added to what extraction already recorded, rather
   // than replacing it. Extraction writes an absolute figure, so a retried run resets the
@@ -339,10 +432,39 @@ export async function compareDocument(
     considered += 1;
     let verdict: Verdict;
 
+    const settled = alreadyClassified.get(`${pair.a.id}:${pair.b.id}`);
+
+    if (settled !== undefined) {
+      // Answered by an earlier attempt under these same versions. The stored row is the
+      // verdict; re-asking would buy the same sentence at full price.
+      resumedFromStore += 1;
+      byLabel[settled] = (byLabel[settled] ?? 0) + 1;
+      continue;
+    }
+
     if (!checks.worthComparing) {
       // Dismissed by name alone. The only label reachable here is `unrelated`, which
       // asserts that no comparison was made rather than that one failed.
       verdict = fromChecks(checks, []);
+    } else if (fastPath && isPlainCorroboration(checks)) {
+      /**
+       * Settled by arithmetic, and asked of nobody.
+       *
+       * Not a budget shortcut applied to whatever was left over: the conditions in
+       * `isPlainCorroboration` are the ones under which the classifier is being shown a
+       * question with no open part. Two accepted claims, two documents, two independent
+       * blocks, one entity, one measure, one stated period, and figures that agree after
+       * conversion. What the model added on these pairs was a restatement of the checks.
+       *
+       * Everything else still goes to it — every disagreement, every context that differs,
+       * every pair where identity or period rests on silence — because those are the ones
+       * where reading the evidence is the whole job.
+       */
+      verdict = fromChecks(
+        checks,
+        [],
+        handlesForPair(pair, evidenceByClaim).map((handle) => handle.evidenceId),
+      );
     } else if (promptTokens + completionTokens >= tokenBudget) {
       verdict = fromChecks(checks, ['the classification budget for this document was exhausted']);
     } else {
@@ -451,6 +573,7 @@ export async function compareDocument(
     semanticPairs: candidates.semanticPairs,
     classifiedByModel,
     classifiedDeterministically,
+    resumedFromStore,
     relationshipsWritten: written,
     byLabel,
     semanticRetrievalAvailable: candidates.embedding.available,
