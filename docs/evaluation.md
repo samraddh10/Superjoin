@@ -30,10 +30,10 @@ Parsing is unaffected and complete: **227 of 227 pages** across the three docume
 source blocks, positions and bounding boxes stored. Everything downstream of the model is
 built and tested; it has had no input.
 
-The plan also names the remedy, and it changes no code: attach a personal Google AI Studio
-key at OpenRouter's integrations page, which moves requests onto that key's own quota.
-Until then the accuracy figures in section 8.1 cannot be produced, and the report prints
-`not measured` for each of them rather than a zero.
+The remedy changes no code: raise the Bedrock per-model requests-per-minute quota for the
+account and region under Service Quotas, or use an inference profile that spreads calls
+across regions. Until then the accuracy figures in section 8.1 cannot be produced, and the
+report prints `not measured` for each of them rather than a zero.
 
 ## What the scorer measures once there is output
 

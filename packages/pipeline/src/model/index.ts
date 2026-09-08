@@ -11,23 +11,27 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-import {
-  ModelError,
-  OpenRouterClient,
-  type CompletionRequest,
-  type CompletionResult,
-} from './openrouter.ts';
+import type { Database, ModelProvider } from '@superjoin/db';
+
+import { BedrockClient } from './bedrock.ts';
+import { GroqClient } from './groq.ts';
+import { SwitchingClient, type ProviderEntry } from './switching.ts';
+import { ModelError, type CompletionRequest, type CompletionResult } from './types.ts';
+
+export { BedrockClient, type BedrockOptions } from './bedrock.ts';
+export { GroqClient, type GroqOptions } from './groq.ts';
+export { SwitchingClient, type SwitchingClientOptions, type ProviderEntry } from './switching.ts';
 
 export {
   ModelError,
-  OpenRouterClient,
   extractJson,
   imageContentPart,
+  withRetries,
   type ChatMessage,
   type CompletionRequest,
   type CompletionResult,
   type ContentPart,
-} from './openrouter.ts';
+} from './types.ts';
 
 export type ModelMode = 'live' | 'saved-output';
 
@@ -62,7 +66,9 @@ export class RecordingClient implements CompletionProvider {
   readonly mode: ModelMode = 'live';
 
   constructor(
-    private readonly inner: OpenRouterClient,
+    // The interface rather than a concrete client: what this class adds is recording,
+    // and it has no reason to know which provider answered.
+    private readonly inner: { readonly model: string; complete(request: CompletionRequest): Promise<CompletionResult> },
     private readonly cacheDir: string,
   ) {}
 
@@ -108,7 +114,7 @@ export class SavedOutputClient implements CompletionProvider {
       raw = await readFile(cachePath(this.cacheDir, fingerprint), 'utf8');
     } catch {
       throw new ModelError(
-        `no saved output for this request (${fingerprint.slice(0, 12)}). Set OPENROUTER_API_KEY to run live, or process a document that has recorded output.`,
+        `no saved output for this request (${fingerprint.slice(0, 12)}). Set AWS_REGION to run live against Bedrock, or process a document that has recorded output.`,
         'saved_output_missing',
         false,
       );
@@ -124,11 +130,30 @@ function cachePath(cacheDir: string, fingerprint: string): string {
 
 export interface ModelClientConfig {
   readonly modelMode: ModelMode;
-  readonly openRouterApiKey: string | undefined;
-  readonly openRouterBaseUrl: string;
-  readonly llmModel: string;
+  readonly awsRegion: string | undefined;
+  readonly awsBearerToken: string | undefined;
+  readonly awsAccessKeyId: string | undefined;
+  readonly awsSecretAccessKey: string | undefined;
+  readonly awsSessionToken: string | undefined;
+  readonly bedrockModelId: string;
+  readonly groqApiKey: string | undefined;
+  readonly groqBaseUrl: string;
+  readonly groqModel: string;
   readonly llmTimeoutMs: number;
   readonly providerMaxRetries: number;
+}
+
+/**
+ * Which providers the environment can actually reach.
+ *
+ * Reported so the interface can show a toggle that reflects reality — offering a switch
+ * to a provider with no credentials would produce a run that fails on its first call.
+ */
+export function configuredProviders(config: ModelClientConfig): ModelProvider[] {
+  const available: ModelProvider[] = [];
+  if (config.awsRegion !== undefined) available.push('bedrock');
+  if (config.groqApiKey !== undefined) available.push('groq');
+  return available;
 }
 
 /**
@@ -137,21 +162,61 @@ export interface ModelClientConfig {
  * The mode is derived from whether a key is present, never set independently, so the two
  * cannot disagree about whether this run reached the network.
  */
-export function createModelClient(config: ModelClientConfig, cacheDir: string): CompletionProvider {
-  if (config.modelMode === 'saved-output' || config.openRouterApiKey === undefined) {
-    return new SavedOutputClient(config.llmModel, cacheDir);
+export function createModelClient(
+  config: ModelClientConfig,
+  cacheDir: string,
+  /**
+   * Passed by the worker so the active provider can be read per call. Omitted by callers
+   * that only need one provider — the API, and the evaluation harness — which then get
+   * whichever the environment configured.
+   */
+  db?: Database,
+): CompletionProvider {
+  const available = configuredProviders(config);
+
+  if (config.modelMode === 'saved-output' || available.length === 0) {
+    return new SavedOutputClient(config.bedrockModelId, cacheDir);
   }
 
-  return new RecordingClient(
-    new OpenRouterClient({
-      apiKey: config.openRouterApiKey,
-      baseUrl: config.openRouterBaseUrl,
-      model: config.llmModel,
+  const providers: Partial<Record<ModelProvider, ProviderEntry>> = {};
+
+  if (config.awsRegion !== undefined) {
+    providers.bedrock = new BedrockClient({
+      modelId: config.bedrockModelId,
+      region: config.awsRegion,
       timeoutMs: config.llmTimeoutMs,
       maxRetries: config.providerMaxRetries,
-      appUrl: 'https://github.com/samraddh10/Superjoin',
-      appTitle: 'Superjoin fact knowledge layer',
-    }),
-    cacheDir,
-  );
+      // Passed through only when set; otherwise the SDK's default chain resolves a
+      // profile, environment credentials, or an instance role on its own.
+      ...(config.awsBearerToken !== undefined ? { bearerToken: config.awsBearerToken } : {}),
+      ...(config.awsAccessKeyId !== undefined ? { accessKeyId: config.awsAccessKeyId } : {}),
+      ...(config.awsSecretAccessKey !== undefined ? { secretAccessKey: config.awsSecretAccessKey } : {}),
+      ...(config.awsSessionToken !== undefined ? { sessionToken: config.awsSessionToken } : {}),
+    });
+  }
+
+  if (config.groqApiKey !== undefined) {
+    providers.groq = new GroqClient({
+      apiKey: config.groqApiKey,
+      baseUrl: config.groqBaseUrl,
+      model: config.groqModel,
+      timeoutMs: config.llmTimeoutMs,
+      maxRetries: config.providerMaxRetries,
+    });
+  }
+
+  const fallback = available[0] as ModelProvider;
+
+  /**
+   * Only the worker gets the switch.
+   *
+   * Without a database handle there is nowhere to read the toggle from, so the single
+   * configured provider is used directly rather than pretending a switch exists.
+   */
+  const inner: ProviderEntry =
+    db !== undefined
+      ? new SwitchingClient({ db, providers, fallback })
+      : (providers[fallback] as ProviderEntry);
+
+  return new RecordingClient(inner, cacheDir);
 }

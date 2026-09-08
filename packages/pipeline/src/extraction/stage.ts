@@ -309,7 +309,7 @@ export async function extractDocument(
 
       if (consecutive >= maxConsecutive) {
         await stop(
-          `stopped after ${consecutive} consecutive throttled chunks; ${chunks.length - processed - failed} chunks were not attempted`,
+          `stopped after ${consecutive} consecutive chunks the provider would not serve; ${chunks.length - processed - failed} chunks were not attempted`,
           'extraction_abandoned',
         );
         return;

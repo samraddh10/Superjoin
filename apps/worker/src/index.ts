@@ -2,7 +2,7 @@
  * Processing worker.
  *
  * Consumes document jobs from pg-boss and runs them to a terminal stage. This is the only
- * process that calls OpenRouter and the only one that loads the local embedding model,
+ * process that calls Bedrock and the only one that loads the local embedding model,
  * per the plan's service boundaries; the API holds neither.
  *
  * The full pipeline is registered here: parsing, the visual route, extraction,
@@ -17,13 +17,14 @@
 import { loadConfig, loadDotEnvFile } from '@superjoin/config';
 
 loadDotEnvFile();
-import { closeDatabase, createDatabase } from '@superjoin/db';
+import { appSettings, closeDatabase, createDatabase } from '@superjoin/db';
 import { join } from 'node:path';
 
 import { documents } from '@superjoin/db';
 import {
   DOCUMENT_QUEUE,
   checkReadiness,
+  configuredProviders,
   createComparisonStage,
   createEmbeddingProvider,
   createExtractionStage,
@@ -62,8 +63,51 @@ function log(level: 'info' | 'error', message: string, fields: Record<string, un
  *
  * Responses are recorded under the storage volume, so the saved-output mode plan 11.1
  * asks for can replay whatever a live run produced.
+ *
+ * The database handle is passed so the active provider is read per call rather than at
+ * boot: the toggle in the interface header has to take effect in a worker nobody
+ * restarted, and a client resolved once here could not do that.
  */
-const modelClient = createModelClient(config, join(config.storageDir, 'model-cache'));
+const modelClient = createModelClient(
+  config,
+  join(config.storageDir, 'model-cache'),
+  database.db,
+);
+
+/**
+ * Publishes which providers this worker can actually reach.
+ *
+ * The interface has to grey out a provider with no credentials, and only this process
+ * holds them — the API deliberately has no model access at all. Writing the capability
+ * here keeps that boundary intact: the API reports what the worker published rather than
+ * being handed keys so it can check for itself.
+ */
+async function publishProviderAvailability(): Promise<void> {
+  const available = configuredProviders(config);
+  try {
+    const [row] = await database.db.select({ id: appSettings.id }).from(appSettings).limit(1);
+    if (row === undefined) {
+      await database.db
+        .insert(appSettings)
+        .values({
+          availableProviders: available,
+          ...(available[0] !== undefined ? { activeProvider: available[0] } : {}),
+        })
+        .onConflictDoNothing();
+      return;
+    }
+    await database.db
+      .update(appSettings)
+      .set({ availableProviders: available, updatedAt: new Date() })
+      .where(eq(appSettings.id, row.id));
+  } catch (error) {
+    // Not fatal. A worker that cannot publish its capability can still process
+    // documents; the interface just shows a staler picture of what is available.
+    log('error', 'could not publish provider availability', {
+      detail: (error as Error).message,
+    });
+  }
+}
 
 /**
  * The embedding model, loaded lazily on first use.
@@ -188,6 +232,8 @@ await boss.work<DocumentJob>(
   },
 );
 
+await publishProviderAvailability();
+
 log('info', 'ready', {
   queue: DOCUMENT_QUEUE,
   stages: STAGES.length,
@@ -195,7 +241,9 @@ log('info', 'ready', {
   storageRoot: readiness.storage.root,
   migrationsApplied: readiness.database.migrationsApplied,
   modelMode: config.modelMode,
-  llmModel: config.llmModel,
+  providers: configuredProviders(config),
+  bedrockModel: config.bedrockModelId,
+  groqModel: config.groqModel,
   llmConcurrency: config.llmConcurrency,
   embeddingModel: config.embeddingModel,
   candidateTopK: config.candidateTopK,

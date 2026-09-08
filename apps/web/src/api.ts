@@ -174,3 +174,36 @@ export function getRelationship(relationshipId: string): Promise<RelationshipDet
 export function documentFileUrl(documentId: string): string {
   return `/documents/${documentId}/file`;
 }
+
+/**
+ * The inference provider toggle.
+ *
+ * `configured` is reported separately from `activeProvider` so the header can show a
+ * provider this deployment cannot reach without offering it: a switch that produces a
+ * run failing on its first model call is worse than a disabled control that says why.
+ */
+const settingsSchema = z.object({
+  activeProvider: z.enum(['bedrock', 'groq']),
+  providers: z.array(
+    z.object({
+      id: z.enum(['bedrock', 'groq']),
+      configured: z.boolean(),
+      model: z.string().nullable(),
+    }),
+  ),
+});
+
+export type SettingsResponse = z.infer<typeof settingsSchema>;
+export type ProviderId = SettingsResponse['activeProvider'];
+
+export function readSettings(): Promise<SettingsResponse> {
+  return request('/settings', settingsSchema);
+}
+
+export function setProvider(provider: ProviderId): Promise<SettingsResponse> {
+  return request('/settings', settingsSchema, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ provider }),
+  });
+}

@@ -13,3 +13,8 @@ starter-datasets.zip
 
 # TypeScript build info
 *.tsbuildinfo
+
+# AWS credential exports. Never committed.
+bedrock-long-term-api-key.csv
+*credentials*.csv
+*api-key*.csv
