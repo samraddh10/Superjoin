@@ -12,7 +12,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import {
@@ -216,10 +216,20 @@ describe.skipIf(!reachable)('when the model answers', () => {
   it('keeps the rendered page image as evidence', async () => {
     // Plan 3.1 requires the original page image to be retained, so a reviewer can see
     // what the model was actually shown.
+    //
+    // Scoped to this test's own document, as the transcription test above already is.
+    // `model_transcription` is not rare in a database that has processed anything real,
+    // and an unscoped `limit 1` returned another document's block whose image lives in
+    // the worker's storage volume rather than this test's temporary directory.
     const [block] = await database.db
       .select({ key: sourceBlocks.pageImageKey })
       .from(sourceBlocks)
-      .where(eq(sourceBlocks.extractionMethod, 'model_transcription'))
+      .where(
+        and(
+          eq(sourceBlocks.extractionMethod, 'model_transcription'),
+          eq(sourceBlocks.documentId, context.job.documentId),
+        ),
+      )
       .limit(1);
 
     expect(block?.key).toBeTruthy();

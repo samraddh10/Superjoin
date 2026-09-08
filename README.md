@@ -38,7 +38,7 @@ Only the worker talks to a model. Put a key in `.env`:
 ```
 OPENROUTER_API_KEY=<your key>
 OPENROUTER_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
-LLM_MODEL=gemini-3.5-flash-lite
+LLM_MODEL=gemini-3.1-flash-lite-preview
 ```
 
 The client is plain OpenAI-compatible, so `OPENROUTER_BASE_URL` can point at OpenRouter or
@@ -54,7 +54,7 @@ pick one, both learned the hard way and documented in `docs/evaluation.md`:
 
 To use a Google key directly, get one at https://aistudio.google.com/apikey. To route
 through OpenRouter instead, set the base URL to `https://openrouter.ai/api/v1` and prefix
-the model (`google/gemini-3.5-flash-lite`).
+the model (`google/gemini-3.1-flash-lite-preview`).
 
 ### Checking it works
 
@@ -70,7 +70,7 @@ access. Only the worker does.
 ### Tests and evaluation
 
 ```bash
-npm install && npm test              # 422 tests; needs postgres up
+npm install && npm test              # 458 tests; needs postgres up
 npx tsx --conditions development evaluation/src/run.ts "<collection name>"
 ```
 
