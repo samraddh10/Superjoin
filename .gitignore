@@ -12,3 +12,8 @@ starter-datasets.zip
 
 # TypeScript build info
 *.tsbuildinfo
+
+# devenv
+.devenv*
+devenv.local.nix
+.direnv
