@@ -307,3 +307,57 @@ describe('ordering pairs by promise', () => {
     expect(refused).toBeLessThan(weakest);
   });
 });
+
+/**
+ * Silence is not disagreement.
+ *
+ * `corroborates` requires zero context differences, so counting an unstated field as a
+ * difference blocked every genuine agreement where either document left something out —
+ * which extraction routinely does. The collection produced no corroboration at all, and
+ * this was why: plan 5.2 makes null mean unknown, and unknown is not a conflict.
+ */
+describe('unstated context', () => {
+  const stated = claim({ scope: 'consolidated', assertionStatus: 'reported' });
+
+  it('corroborates when the other document simply does not state the scope', () => {
+    const silent = claim({
+      id: 'claim-b',
+      documentId: 'doc-2',
+      scope: null,
+      sourceBlockIds: ['block-2'],
+    });
+
+    const checks = runDeterministicChecks(stated, silent);
+    expect(checks.contextDifferences.map((d) => d.dimension)).not.toContain('scope');
+    // And that is what lets the deterministic path reach the case at all, with no model.
+    expect(deterministicLabel(checks).label).toBe('corroborates');
+  });
+
+  it('still records a difference when both documents state and disagree', () => {
+    const standalone = claim({
+      id: 'claim-b',
+      documentId: 'doc-2',
+      scope: 'standalone',
+      sourceBlockIds: ['block-2'],
+    });
+
+    const checks = runDeterministicChecks(stated, standalone);
+    expect(checks.contextDifferences.map((d) => d.dimension)).toContain('scope');
+    // Consolidated against standalone is a real difference, so this is not a corroboration.
+    expect(deterministicLabel(checks).label).not.toBe('corroborates');
+  });
+
+  it('does not invent a currency conflict from one document staying silent', () => {
+    const noCurrency = claim({
+      id: 'claim-b',
+      documentId: 'doc-2',
+      currency: null,
+      sourceBlockIds: ['block-2'],
+    });
+
+    const checks = runDeterministicChecks(stated, noCurrency);
+    // Plan 5.1 forbids converting currencies without a stated rate, but that rule is about
+    // two *stated* currencies; it does not make an unstated one a conflict.
+    expect(checks.contextDifferences.map((d) => d.dimension)).not.toContain('currency');
+  });
+});
