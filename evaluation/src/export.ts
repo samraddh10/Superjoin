@@ -153,14 +153,31 @@ try {
   };
 
   /**
-   * Model-classified relationships first.
+   * Findings first, then the rest.
    *
-   * The deterministic fallback abstains by design, so a sample led by its output would
-   * show a system that says "unrelated" nine thousand times. What is worth reviewing is
-   * what the classifier concluded and why.
+   * Two orderings compose here. Model-classified rows come before deterministic ones,
+   * because the fallback abstains by design and a sample led by its output would show a
+   * system that says "unrelated" seventeen thousand times. And within those, the four
+   * labels that assert something come before the two that decline to — a first pass at
+   * this sorted only by method and produced a sample that was two thirds `unrelated`,
+   * which is accurate about the collection and useless for judging the system.
+   *
+   * Every finding fits in the slice, so nothing a reviewer would want to check is cut.
    */
+  const labelRank: Record<string, number> = {
+    contradicts: 0,
+    likely_contradiction: 1,
+    reconciled_by_context: 2,
+    corroborates: 3,
+    insufficient_context: 4,
+    unrelated: 5,
+  };
+
   const sampleRelationships = relationshipRows
-    .sort((a, b) => (a.method === b.method ? 0 : a.method === 'model' ? -1 : 1))
+    .sort((a, b) => {
+      if (a.method !== b.method) return a.method === 'model' ? -1 : 1;
+      return (labelRank[a.label] ?? 9) - (labelRank[b.label] ?? 9);
+    })
     .slice(0, 30)
     .map((row) => ({
       label: row.label,
