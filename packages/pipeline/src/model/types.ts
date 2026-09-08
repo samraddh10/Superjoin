@@ -17,10 +17,9 @@
 export type ContentPart =
   | { readonly type: 'text'; readonly text: string }
   /**
-   * Base64 rather than a `Uint8Array`, because these parts are hashed into the replay
-   * key by `requestFingerprint`, which stringifies the request. A typed array serialises
-   * to `{"0":137,"1":80,…}` — stable, but enormous for a page image, and it would make
-   * every recorded request file unreadable.
+   * Base64 rather than a `Uint8Array`, because both providers want a string on the wire
+   * and a typed array serialises to `{"0":137,"1":80,…}` — enormous for a page image,
+   * and unreadable in any log or error that carries the request.
    */
   | { readonly type: 'image'; readonly mimeType: string; readonly base64: string };
 

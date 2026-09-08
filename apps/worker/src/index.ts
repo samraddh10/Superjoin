@@ -14,11 +14,10 @@
  */
 
 // Before anything reads configuration. Node does not load .env on its own.
-import { loadConfig, loadDotEnvFile } from '@superjoin/config';
+import { loadConfig, loadDotEnvFile, requireModelAccess } from '@superjoin/config';
 
 loadDotEnvFile();
 import { appSettings, closeDatabase, createDatabase } from '@superjoin/db';
-import { join } from 'node:path';
 
 import { documents } from '@superjoin/db';
 import {
@@ -61,18 +60,23 @@ function log(level: 'info' | 'error', message: string, fields: Record<string, un
 /**
  * The model client. Only the worker holds one, per the plan's service boundaries.
  *
- * Responses are recorded under the storage volume, so the saved-output mode plan 11.1
- * asks for can replay whatever a live run produced.
+ * A configured provider is the only way to obtain a completion, so an unconfigured
+ * worker stops here rather than at the first document. Whether the credentials *work* is
+ * settled by the first call; a run whose calls fail is reported failed, never completed
+ * on substituted answers.
  *
  * The database handle is passed so the active provider is read per call rather than at
  * boot: the toggle in the interface header has to take effect in a worker nobody
  * restarted, and a client resolved once here could not do that.
  */
-const modelClient = createModelClient(
-  config,
-  join(config.storageDir, 'model-cache'),
-  database.db,
-);
+try {
+  requireModelAccess(config);
+} catch (error) {
+  log('error', 'not configured', { detail: (error as Error).message });
+  process.exit(1);
+}
+
+const modelClient = createModelClient(config, database.db);
 
 /**
  * Publishes which providers this worker can actually reach.
@@ -144,6 +148,8 @@ const STAGES: readonly StageHandler[] = [
     client: modelClient,
     tokenBudget: config.documentTokenBudget,
     concurrency: config.llmConcurrency,
+    batchInputTokens: config.extractionBatchTokens,
+    batchMaxChunks: config.extractionBatchChunks,
   }),
   createNormalizationStage({ client: modelClient }),
   createComparisonStage({
@@ -178,7 +184,7 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
 
 await ensureStorage(config.storageDir);
 
-const readiness = await checkReadiness('worker', database, config.storageDir, config.modelMode);
+const readiness = await checkReadiness('worker', database, config.storageDir);
 
 if (!readiness.ok) {
   // Exiting non-zero rather than idling. A worker that cannot reach its database or its
@@ -237,10 +243,8 @@ await publishProviderAvailability();
 log('info', 'ready', {
   queue: DOCUMENT_QUEUE,
   stages: STAGES.length,
-  modelClientMode: modelClient.mode,
   storageRoot: readiness.storage.root,
   migrationsApplied: readiness.database.migrationsApplied,
-  modelMode: config.modelMode,
   providers: configuredProviders(config),
   bedrockModel: config.bedrockModelId,
   groqModel: config.groqModel,

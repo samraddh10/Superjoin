@@ -44,7 +44,6 @@ function stubClient(
   verdict: { same: boolean; reason: string },
 ): CompletionProvider {
   return {
-    mode: 'live',
     model: 'stub/adjudicator',
     async complete(request): Promise<CompletionResult> {
       asked.push(JSON.stringify(request.messages).slice(0, 80));
@@ -229,24 +228,23 @@ describe.skipIf(!reachable)('a failing adjudicator', () => {
     const { collectionId } = await seedCollection();
 
     const failing: CompletionProvider = {
-      mode: 'live',
-      model: 'stub/failing',
+        model: 'stub/failing',
       async complete(): Promise<CompletionResult> {
         throw new ModelError('quota exhausted', 'provider_rate_limited', true);
       },
     };
 
     await resolveEntity(database.db, { collectionId, subject: 'Epsilon Roadways One' });
-    const resolution = await resolveEntity(database.db, {
-      collectionId,
-      subject: 'Epsilon Roadways Two',
-      client: failing,
-    });
 
-    expect(resolution.adjudications).toBe(1);
-    expect(resolution.adjudicationFailed).toBe(true);
-    // Still unmerged: a failed question is never taken as a yes.
-    expect(resolution.method).toBe('created');
+    // Neither a yes nor a no. Leaving the subject unmerged would decide entity identity
+    // by outage and record it as though the question had been answered.
+    await expect(
+      resolveEntity(database.db, {
+        collectionId,
+        subject: 'Epsilon Roadways Two',
+        client: failing,
+      }),
+    ).rejects.toBeInstanceOf(ModelError);
   });
 
   it('does not report a failure when the adjudicator simply says no', async () => {

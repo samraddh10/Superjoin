@@ -366,8 +366,8 @@ interface Adjudication {
  * name by design, and a model told only "are these the same company?" will merge them
  * more often than not.
  *
- * A failed or unparsable answer is a "no". Refusing to merge on a broken call keeps the
- * two entities separate, which is the recoverable outcome; merging on one would be
+ * An unparsable answer is a "no". Refusing to merge on a reply that cannot be read keeps
+ * the two entities separate, which is the recoverable outcome; merging on one would be
  * invisible afterwards.
  */
 async function adjudicate(
@@ -431,12 +431,19 @@ async function adjudicate(
             : 'the model judged these to be different entities',
     };
   } catch (error) {
-    const kind = error instanceof ModelError ? error.kind : 'unexpected_error';
-    // `failed` rather than a bare `same: false`. A considered "these are different
-    // companies" and "the provider is down" both leave the subject unmerged, but only one
-    // of them means asking again is pointless — and without the distinction a stage kept
-    // paying five retries and their backoff for every remaining subject.
-    return { same: false, failed: true, reason: `left unmerged: the adjudication failed (${kind})` };
+    // A provider that did not answer is not an answer. Leaving the subject unmerged
+    // would decide entity identity by outage, and every claim downstream would carry
+    // that decision with no sign of where it came from, so the error travels instead.
+    if (error instanceof ModelError) throw error;
+
+    // An answer that arrived but could not be read is a "no". Refusing to merge on a
+    // malformed reply keeps the two entities separate, which is the recoverable outcome;
+    // merging on one would not be.
+    return {
+      same: false,
+      failed: true,
+      reason: 'left unmerged: the adjudication could not be read',
+    };
   }
 }
 

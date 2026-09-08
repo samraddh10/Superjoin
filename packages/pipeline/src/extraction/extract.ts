@@ -1,10 +1,14 @@
 /**
- * Extracting claims from one chunk.
+ * Extracting claims from one batch of chunks.
  *
  * One model call, one Zod parse, and at most one repair. Everything about the failure
  * handling follows from the same measured fact that shaped the visual route: on the free
  * pool a 429 is ordinary traffic, not an incident, so this function fails loudly for the
- * chunk it was given and leaves the rest of the document to its caller.
+ * batch it was given and leaves the rest of the document to its caller.
+ *
+ * A batch of one passage is asked exactly what a single chunk was always asked, so the
+ * common case is unchanged; `batch.ts` explains what packing several buys and what it
+ * costs.
  *
  * The Zod parse after `response_format` is not defensive duplication. Plan 4.1 requires
  * it, because a provider under load may ignore the schema entirely, and because a reply
@@ -19,12 +23,13 @@ import {
   type CompletionProvider,
 } from '../model/index.ts';
 import type { Chunk } from '../parsing/chunk.ts';
+import { planBatches, type ChunkBatch } from './batch.ts';
 import {
   EXTRACTION_RESPONSE_SCHEMA,
   parseExtraction,
   type ExtractedClaim,
 } from './contract.ts';
-import { buildExtractionMessages, buildRepairMessages } from './prompt.ts';
+import { buildBatchMessages, buildRepairMessages } from './prompt.ts';
 
 export interface ExtractChunkOptions {
   readonly client: CompletionProvider;
@@ -41,6 +46,7 @@ export interface ExtractChunkOptions {
 }
 
 export interface ChunkExtraction {
+  /** The first chunk in the batch. Kept for messages that name a position in the document. */
   readonly chunkIndex: number;
   readonly claims: readonly ExtractedClaim[];
   /** What actually served the request, which need not be what was requested. */
@@ -53,27 +59,29 @@ export interface ChunkExtraction {
 }
 
 /**
- * Extracts the claims one chunk supports.
+ * Extracts the claims a batch's passages support.
  *
  * Token counts are summed across the repair attempt as well, because plan 4.2 asks for
  * token usage to be recorded and a repair is spend the evaluation has to see.
  */
-export async function extractChunk(
-  chunk: Chunk,
+export async function extractBatch(
+  batch: ChunkBatch,
   options: ExtractChunkOptions,
 ): Promise<ChunkExtraction> {
-  const messages: ChatMessage[] = buildExtractionMessages(chunk, options.vocabulary ?? '');
+  const messages: ChatMessage[] = buildBatchMessages(batch, options.vocabulary ?? '');
+  const maxTokens = options.maxTokens ?? outputAllowance(batch.passages.length);
+  const chunkIndex = batch.passages[0]?.chunk.index ?? 0;
 
   const first = await options.client.complete({
     messages,
     schema: { name: 'extracted_claims', schema: EXTRACTION_RESPONSE_SCHEMA },
-    maxTokens: options.maxTokens ?? 4000,
+    maxTokens,
   });
 
   const firstParse = parseExtraction(readJson(first.text));
   if (firstParse.ok) {
     return {
-      chunkIndex: chunk.index,
+      chunkIndex,
       claims: firstParse.claims,
       servedByModel: first.servedByModel,
       promptTokens: first.promptTokens,
@@ -94,7 +102,7 @@ export async function extractChunk(
   const second = await options.client.complete({
     messages: buildRepairMessages(messages, first.text, firstParse.feedback),
     schema: { name: 'extracted_claims', schema: EXTRACTION_RESPONSE_SCHEMA },
-    maxTokens: options.maxTokens ?? 4000,
+    maxTokens,
   });
 
   const secondParse = parseExtraction(readJson(second.text));
@@ -110,7 +118,7 @@ export async function extractChunk(
   }
 
   return {
-    chunkIndex: chunk.index,
+    chunkIndex,
     claims: secondParse.claims,
     servedByModel: second.servedByModel,
     promptTokens: first.promptTokens + second.promptTokens,
@@ -118,6 +126,45 @@ export async function extractChunk(
     latencyMs: first.latencyMs + second.latencyMs,
     repaired: true,
   };
+}
+
+/**
+ * Extracts the claims one chunk supports.
+ *
+ * A batch of one, which is the same request this function always made. Kept because a
+ * caller with a single chunk should not have to know what a batch is.
+ */
+export async function extractChunk(
+  chunk: Chunk,
+  options: ExtractChunkOptions,
+): Promise<ChunkExtraction> {
+  const [batch] = planBatches([chunk]);
+  if (batch === undefined) {
+    return {
+      chunkIndex: chunk.index,
+      claims: [],
+      servedByModel: options.client.model,
+      promptTokens: 0,
+      completionTokens: 0,
+      latencyMs: 0,
+      repaired: false,
+    };
+  }
+
+  return extractBatch(batch, options);
+}
+
+/**
+ * How much reply one request may produce.
+ *
+ * A lone passage keeps the 4,000 it always had, so nothing about a document whose chunks
+ * do not pack changes. Each additional passage adds less than a full allowance, because
+ * the reason those chunks batched is that they are small — a request of four short
+ * passages does not produce four dense pages of claims, and a ceiling generous enough for
+ * the worst case would let one runaway reply spend a document's budget.
+ */
+function outputAllowance(passages: number): number {
+  return Math.min(8000, 4000 + 2000 * Math.max(0, passages - 1));
 }
 
 /**

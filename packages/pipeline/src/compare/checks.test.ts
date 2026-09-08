@@ -139,6 +139,31 @@ describe('deterministicLabel', () => {
     expect(decided.rationale).toContain('rounding');
   });
 
+  it('refuses to corroborate when neither claim states a period', () => {
+    // checks@2 stopped counting silence as disagreement, which was right — but an empty
+    // difference list then meant both "the contexts match" and "neither said". Two
+    // figures with no period on either side are not known to describe the same thing,
+    // and reading agreement into that is how a quarter corroborates a year.
+    const checks = runDeterministicChecks(
+      claim({ periodLabel: null, periodType: null }),
+      report({ periodLabel: null, periodType: null }),
+    );
+
+    expect(checks.contextDifferences).toEqual([]);
+    expect(checks.contextConfirmed).toBe(false);
+    expect(deterministicLabel(checks).label).toBe('insufficient_context');
+  });
+
+  it('refuses to corroborate when identity rests on the subject line alone', () => {
+    // `unresolved` means neither claim was tied to an entity, so the two agree on a name.
+    // Two companies can share one, and only the classifier is in a position to read the
+    // surrounding text and say.
+    const checks = runDeterministicChecks(claim({ entityId: null }), report({ entityId: null }));
+
+    expect(checks.entityMatch).toBe('unresolved');
+    expect(deterministicLabel(checks).label).toBe('insufficient_context');
+  });
+
   it('refuses to corroborate two claims resting on one passage', () => {
     const decided = deterministicLabel(
       runDeterministicChecks(claim(), report({ sourceBlockIds: ['block-1'] })),

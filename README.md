@@ -33,8 +33,10 @@ and worker start, so there is no separate setup step.
 
 ### Model access
 
-Only the worker calls a model. Inference runs on **Amazon Bedrock** through the `Converse`
-action, so the model is a configuration value rather than a code dependency.
+Only the worker calls a model, and it will not start without one — every document is
+processed by calling a model, and there is no offline mode behind it. Inference runs on
+**Amazon Bedrock** through the `Converse` action, or on **Groq**, switchable from the
+interface header; the model is a configuration value rather than a code dependency.
 
 ```
 AWS_REGION=us-east-1
@@ -67,9 +69,11 @@ table-like pages fall back to native text — a documented limitation rather tha
 one, visible as `visual_route_failed` in the Issues view. Anthropic models on Bedrock
 satisfy both requirements if you need the visual route.
 
-`AWS_REGION` left empty runs the pipeline against recorded output with no AWS account at
-all, which is how the sample output in `sample-output/` can be reviewed without
-credentials.
+Groq is the second provider, and either one on its own is enough to start: set
+`GROQ_API_KEY` instead of `AWS_REGION` and the header toggle offers whichever the worker
+found credentials for. With neither configured the worker exits at startup rather than
+claiming jobs it cannot process. The sample output in `sample-output/` is reviewable
+without any credentials at all; producing new output is not.
 
 ### Checking it works
 
@@ -79,13 +83,14 @@ curl http://localhost:3000/ready     # {"ok":true,...}
 docker compose logs -f worker        # watch documents process
 ```
 
-The API reporting `"modelMode":"saved-output"` is correct: it deliberately has no model
-access. Only the worker does.
+The API holds no model key by design and never calls the provider; only the worker does.
+A worker that exits immediately with `not configured` is saying no provider reached it —
+check that `.env` exists and that `AWS_REGION` or `GROQ_API_KEY` is set in it.
 
 ### Tests and evaluation
 
 ```bash
-npm install && npm test              # 458 tests; needs postgres up
+npm install && npm test              # 468 tests; needs postgres up
 npx tsx --conditions development evaluation/src/run.ts "<collection name>"
 ```
 

@@ -48,7 +48,7 @@ D4 must be a failure the system actually produced on a starter document. A synth
 | ID | Criterion | Check |
 |---|---|---|
 | E1 | Setup works from a clean checkout with the documented commands and nothing else | On a machine that has never run the project: clone, follow the README, process a PDF |
-| E2 | Sample output is sufficient to evaluate the system without a paid API key | Unset `GEMINI_API_KEY`; the saved-output mode runs and is clearly labelled as saved rather than live |
+| E2 | A reviewer can see real output without running the pipeline themselves | Read `sample-output/sample.json`, an exported collection with its claims, evidence and relationships. Processing itself requires a working key: there is no replay mode, and a run whose model calls fail is reported failed rather than completed from substituted answers |
 | E3 | No credentials, keys or `.env` files are committed | Scan the repository history before submission |
 | E4 | Migrations apply from empty, in order, without manual steps | Drop the database volume and start again |
 

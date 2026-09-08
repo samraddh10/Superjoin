@@ -4,7 +4,7 @@
  * Reads the source blocks parsing wrote, chunks them, asks the model what each chunk
  * asserts, verifies every citation against the stored text, and writes what survives.
  *
- * Three choices here are worth stating, because the obvious alternative is wrong in each
+ * Four choices here are worth stating, because the obvious alternative is wrong in each
  * case.
  *
  * A page that was transcribed by the visual route has its native table blocks left out of
@@ -20,6 +20,12 @@
  *
  * A token budget bounds the run. Without one, a hundred-page document spends the whole
  * shared quota on its own tables and every later document gets nothing.
+ *
+ * A retry resumes rather than restarts. The claim writer was already idempotent, so a
+ * second attempt could not duplicate anything — but it re-asked the model about every
+ * chunk to get there, which made the price of a document its length times its attempts.
+ * A chunk that succeeded now records that it did, keyed on everything the answer depended
+ * on, and the next attempt skips the call while still counting what the chunk produced.
  */
 
 import { asc, eq } from 'drizzle-orm';
@@ -29,11 +35,18 @@ import { claims, processingRuns, sourceBlocks } from '@superjoin/db';
 
 import { ModelError, type CompletionProvider } from '../model/index.ts';
 import { chunkSourceBlocks, type Chunk, type ChunkSourceBlock } from '../parsing/chunk.ts';
-import type { ProcessingContext, StageHandler } from '../processor.ts';
+import { ProcessingError, type ProcessingContext, type StageHandler } from '../processor.ts';
 import { recordIssue, recordProgress } from '../run-state.ts';
 import { loadRegistry, registerPredicates, renderRegistry } from '../normalize/registry.ts';
+import {
+  chunkFingerprint,
+  loadCompletedChunks,
+  recordCompletedChunk,
+  type ExtractionIdentity,
+} from './checkpoint.ts';
 import { EXTRACTION_PROMPT_VERSION } from './contract.ts';
-import { extractChunk } from './extract.ts';
+import { apportion, planBatches, type ChunkBatch } from './batch.ts';
+import { extractBatch } from './extract.ts';
 import { persistClaim } from './persist.ts';
 import { verifyClaim, type EvidenceBlock } from './verify.ts';
 
@@ -41,8 +54,21 @@ export interface ExtractionStageOptions {
   readonly client: CompletionProvider;
   /** Prompt and completion tokens this stage may spend on one document. */
   readonly tokenBudget?: number;
-  /** Chunks in flight at once. Sourced from LLM_CONCURRENCY. */
+  /** Requests in flight at once. Sourced from LLM_CONCURRENCY. */
   readonly concurrency?: number;
+  /**
+   * Input tokens one request may carry across its passages. Sourced from
+   * EXTRACTION_BATCH_TOKENS.
+   *
+   * Chunking flushes at every heading and page, which is right for citations and leaves a
+   * tail of very small chunks. Each used to pay the full fixed cost of a request — system
+   * prompt, rules, the collection's whole predicate vocabulary, schema — to ask about a
+   * few dozen words. Setting this to zero effectively turns batching off, one passage per
+   * request, which is what the stage did before.
+   */
+  readonly batchInputTokens?: number;
+  /** Passages one request may carry. Sourced from EXTRACTION_BATCH_CHUNKS. */
+  readonly batchMaxChunks?: number;
   /** Give up after this many consecutive throttled chunks. */
   readonly maxConsecutiveFailures?: number;
   /**
@@ -90,13 +116,31 @@ export function classifyFailure(error: unknown): FailureRun {
 export interface ExtractionSummary {
   readonly chunksTotal: number;
   readonly chunksProcessed: number;
+  /**
+   * Chunks a previous attempt had already extracted, counted but not re-asked.
+   *
+   * Part of `chunksProcessed`, not additional to it: the document was read, and by which
+   * attempt is bookkeeping. Reported separately because it is the difference between a
+   * retry that cost a document's worth of tokens and one that cost a chunk's.
+   */
+  readonly chunksResumed: number;
   readonly chunksFailed: number;
   readonly claimsExtracted: number;
   readonly claimsAccepted: number;
   readonly claimsNeedingReview: number;
   readonly claimsRejected: number;
+  /** What the document cost in total, resumed chunks included. */
   readonly promptTokens: number;
   readonly completionTokens: number;
+  /**
+   * What this attempt itself spent.
+   *
+   * Separate from the totals because the two answer different questions, and conflating
+   * them is how a retry that cost nothing came to be reported as a document extracted for
+   * free. The budget is spent against these; the run is costed against the totals.
+   */
+  readonly spentPromptTokens: number;
+  readonly spentCompletionTokens: number;
   readonly stoppedEarly: boolean;
 }
 
@@ -207,6 +251,27 @@ export async function extractDocument(
    */
   const vocabulary = renderRegistry(await loadRegistry(db, context.job.collectionId));
 
+  /**
+   * What a chunk's answer depended on, and therefore what a cached one is only valid for.
+   *
+   * The vocabulary is in here rather than beside it because it is part of the prompt: two
+   * runs of the same chunk under two registries are two different questions, and the
+   * second must not be answered from the first.
+   */
+  const identity: ExtractionIdentity = {
+    promptVersion: EXTRACTION_PROMPT_VERSION,
+    modelName: options.client.model,
+    vocabulary,
+  };
+
+  const fingerprints = new Map(chunks.map((chunk) => [chunk.index, chunkFingerprint(chunk, identity)]));
+  const completed = await loadCompletedChunks(
+    db,
+    context.job.documentId,
+    [...fingerprints.values()],
+    identity,
+  );
+
   await recordProgress(db, context.job.runId, { chunksTotal: chunks.length, chunksProcessed: 0 });
 
   // Recorded before any call, so a run interrupted halfway still says which prompt and
@@ -220,6 +285,7 @@ export async function extractDocument(
     return {
       chunksTotal: 0,
       chunksProcessed: 0,
+      chunksResumed: 0,
       chunksFailed: 0,
       claimsExtracted: 0,
       claimsAccepted: 0,
@@ -227,12 +293,23 @@ export async function extractDocument(
       claimsRejected: 0,
       promptTokens: 0,
       completionTokens: 0,
+      spentPromptTokens: 0,
+      spentCompletionTokens: 0,
       stoppedEarly: false,
     };
   }
 
+  /**
+   * The chunks a previous attempt already finished, settled before any request is planned.
+   *
+   * Separated here rather than skipped inside the worker so batching never packs a chunk
+   * that is not going to be asked. A batch built around one is a request carrying content
+   * nobody needed, which is the cost this whole path exists to remove.
+   */
+  const pending: Chunk[] = [];
   let next = 0;
   let processed = 0;
+  let resumed = 0;
   let failed = 0;
   let extracted = 0;
   let accepted = 0;
@@ -240,6 +317,9 @@ export async function extractDocument(
   let rejected = 0;
   let promptTokens = 0;
   let completionTokens = 0;
+  /** The share of the totals this attempt actually paid for. Only these meet the budget. */
+  let spentPromptTokens = 0;
+  let spentCompletionTokens = 0;
   /**
    * Two runs of failures, counted apart.
    *
@@ -265,21 +345,49 @@ export async function extractDocument(
     });
   };
 
-  const runOne = async (chunk: Chunk): Promise<void> => {
-    const result = await extractChunk(chunk, { client: options.client, vocabulary });
+  /**
+   * Runs one batch: one request, however many passages it carries.
+   *
+   * Claims come back as one list and are attributed to a chunk by the block each cites,
+   * not by anything the model says about which passage it read. Handles are unique across
+   * a batch, so that attribution is a lookup rather than a judgement, and a model that
+   * confuses two passages still produces a claim grounded in the block it actually quoted.
+   */
+  const runBatch = async (batch: ChunkBatch): Promise<void> => {
+    const result = await extractBatch(batch, { client: options.client, vocabulary });
 
     promptTokens += result.promptTokens;
     completionTokens += result.completionTokens;
+    spentPromptTokens += result.promptTokens;
+    spentCompletionTokens += result.completionTokens;
     extracted += result.claims.length;
 
-    const refToBlockId = new Map(
-      chunk.blockRefs.map((entry) => [entry.ref, entry.sourceBlockId]),
-    );
+    const chunkOfBlock = new Map<string, number>();
+    for (const passage of batch.passages) {
+      for (const ref of passage.chunk.blockRefs) {
+        chunkOfBlock.set(ref.sourceBlockId, passage.chunk.index);
+      }
+    }
+
+    const tally = new Map<number, { extracted: number; accepted: number; review: number; rejected: number }>();
+    for (const passage of batch.passages) {
+      tally.set(passage.chunk.index, { extracted: 0, accepted: 0, review: 0, rejected: 0 });
+    }
+
+    /**
+     * A claim whose citations resolve to nothing belongs to no passage in particular.
+     *
+     * It is a rejection either way — `verifyClaim` refuses a citation it cannot resolve —
+     * but there is no honest way to say which chunk produced it, so the whole batch is
+     * left unrecorded and asked again on a retry. Costing a few extra passages is the
+     * right side to err on against marking a chunk done on someone else's evidence.
+     */
+    let unattributed = 0;
 
     for (const claim of result.claims) {
       const verification = verifyClaim(claim, {
         documentId: context.job.documentId,
-        refToBlockId,
+        refToBlockId: batch.refToBlockId,
         blocksById,
         nativeBlocksByPage: byPage,
       });
@@ -292,16 +400,90 @@ export async function extractDocument(
       if (stored.status === 'accepted') accepted += 1;
       else if (stored.status === 'needs_review') needsReview += 1;
       else rejected += 1;
+
+      const owner = claim.evidence_block_ids
+        .map((ref) => batch.refToBlockId.get(ref))
+        .find((blockId) => blockId !== undefined && chunkOfBlock.has(blockId));
+      const counts = owner === undefined ? undefined : tally.get(chunkOfBlock.get(owner) ?? -1);
+
+      if (counts === undefined) {
+        unattributed += 1;
+        continue;
+      }
+
+      counts.extracted += 1;
+      if (stored.status === 'accepted') counts.accepted += 1;
+      else if (stored.status === 'needs_review') counts.review += 1;
+      else counts.rejected += 1;
+    }
+
+    // Apportioned by each passage's share of the batch's text. The per-chunk figure is an
+    // apportionment rather than a measurement — a request is billed once — but the shares
+    // add back up to what was spent, which is what a resumed run has to be able to report.
+    const weights = batch.passages.map((passage) => passage.chunk.estimatedTokens);
+    const promptShares = apportion(result.promptTokens, weights);
+    const completionShares = apportion(result.completionTokens, weights);
+
+    for (const [position, passage] of batch.passages.entries()) {
+      const counts = tally.get(passage.chunk.index);
+      if (counts === undefined || counts.rejected > 0 || unattributed > 0) continue;
+
+      const fingerprint =
+        fingerprints.get(passage.chunk.index) ?? chunkFingerprint(passage.chunk, identity);
+
+      // After the claims are written, so a crash between the two costs a repeated call
+      // rather than marking a chunk done whose claims never landed.
+      await recordCompletedChunk(db, context.job.documentId, passage.chunk, fingerprint, identity, {
+        claimsExtracted: counts.extracted,
+        claimsAccepted: counts.accepted,
+        claimsNeedingReview: counts.review,
+        claimsRejected: 0,
+        promptTokens: promptShares[position] ?? 0,
+        completionTokens: completionShares[position] ?? 0,
+      });
     }
   };
+
+  /**
+   * Everything a previous attempt already finished, counted from the record.
+   *
+   * Done in one pass before any request, so the batches are planned over the work that
+   * actually remains.
+   */
+  for (const chunk of chunks) {
+    const fingerprint = fingerprints.get(chunk.index) ?? chunkFingerprint(chunk, identity);
+    const cached = completed.get(fingerprint);
+
+    if (cached === undefined) {
+      pending.push(chunk);
+      continue;
+    }
+
+    promptTokens += cached.promptTokens;
+    completionTokens += cached.completionTokens;
+    extracted += cached.claimsExtracted;
+    accepted += cached.claimsAccepted;
+    needsReview += cached.claimsNeedingReview;
+    rejected += cached.claimsRejected;
+    processed += 1;
+    resumed += 1;
+  }
+
+  const batches = planBatches(pending, {
+    ...(options.batchInputTokens !== undefined ? { maxInputTokens: options.batchInputTokens } : {}),
+    ...(options.batchMaxChunks !== undefined ? { maxChunks: options.batchMaxChunks } : {}),
+  });
 
   const worker = async (): Promise<void> => {
     for (;;) {
       if (stoppedEarly) return;
 
-      if (promptTokens + completionTokens >= tokenBudget) {
+      // Measured on what this attempt spent, not on the document's total. A resumed
+      // chunk's tokens were paid for by an earlier attempt and charging them again here
+      // would let a long document exhaust its budget without making a single call.
+      if (spentPromptTokens + spentCompletionTokens >= tokenBudget) {
         await stop(
-          `stopped after ${promptTokens + completionTokens} tokens, the per-document budget; ${chunks.length - processed - failed} chunks were not attempted`,
+          `stopped after ${spentPromptTokens + spentCompletionTokens} tokens, the per-document budget; ${chunks.length - processed - failed} chunks were not attempted`,
           'token_budget_exhausted',
         );
         return;
@@ -325,38 +507,52 @@ export async function extractDocument(
 
       const index = next;
       next += 1;
-      const chunk = chunks[index];
-      if (chunk === undefined) return;
+      const batch = batches[index];
+      if (batch === undefined) return;
+
+      const first = batch.passages[0]?.chunk;
+      const pages = [...new Set(batch.passages.flatMap((passage) => passage.chunk.physicalPages))];
 
       try {
-        await runOne(chunk);
-        processed += 1;
+        await runBatch(batch);
+        processed += batch.passages.length;
         consecutive = 0;
         consecutiveAny = 0;
       } catch (error) {
-        failed += 1;
+        // A batch fails as a unit. Its passages shared one request, and there is no way
+        // to tell which of them the model choked on — nor is it usually one of them.
+        failed += batch.passages.length;
 
         const modelError = error instanceof ModelError ? error : null;
+        // The provider refusing to serve and a provider that answered badly are counted
+        // apart: only the first means every further call is wasted quota.
         const run = classifyFailure(error);
-        const throttled = run === 'throttled';
 
         consecutiveAny += 1;
         if (run !== 'malformed') consecutive += 1;
 
-        // Recorded, not thrown. The chunk's blocks are already stored as evidence and
-        // the other chunks keep their claims; failing the document here would discard
-        // work that succeeded because one call did not.
         await recordIssue(db, context.job.runId, {
           stage: 'extracting',
-          failureKind: throttled
-            ? 'extraction_throttled'
-            : (modelError?.kind ?? 'extraction_failed'),
-          failureClass: throttled ? 'transient' : 'permanent',
-          message: `chunk ${chunk.index} (page ${chunk.physicalPages.join(', ')}): ${(error as Error).message.slice(0, 300)}`,
-          ...(chunk.physicalPages[0] !== undefined
-            ? { physicalPage: chunk.physicalPages[0] }
-            : {}),
+          failureKind: modelError?.kind ?? 'extraction_failed',
+          failureClass: modelError !== null && modelError.retryable ? 'transient' : 'permanent',
+          message: `${batch.passages.length === 1 ? `chunk ${first?.index}` : `chunks ${batch.passages.map((passage) => passage.chunk.index).join(', ')}`} (page ${pages.join(', ')}): ${(error as Error).message.slice(0, 300)}`,
+          ...(pages[0] !== undefined ? { physicalPage: pages[0] } : {}),
         });
+
+        // A provider that did not answer fails the document. Keeping the other chunks'
+        // claims would report a document as extracted when part of it was never read,
+        // and nothing downstream could tell the difference. A chunk that failed for its
+        // own reasons — a malformed response from a provider that did reply — still
+        // costs only that chunk.
+        if (modelError !== null) {
+          throw new ProcessingError(
+            `extraction call failed on chunk ${first?.index ?? 0}: ${modelError.message}`,
+            modelError.kind,
+            modelError.retryable ? 'transient' : 'permanent',
+            'extracting',
+            pages[0],
+          );
+        }
       }
 
       await recordProgress(db, context.job.runId, {
@@ -368,11 +564,13 @@ export async function extractDocument(
   };
 
   await Promise.all(
-    Array.from({ length: Math.min(concurrency, chunks.length) }, () => worker()),
+    Array.from({ length: Math.min(concurrency, batches.length) }, () => worker()),
   );
 
   // Absolute, not incremental: a retried job re-enters this stage from the beginning and
-  // an increment would report the second pass on top of the first.
+  // an increment would report the second pass on top of the first. The figure includes
+  // resumed chunks, so it stays the cost of reading the document rather than the cost of
+  // whichever attempt happened to finish it.
   await db
     .update(processingRuns)
     .set({ inputTokens: promptTokens, outputTokens: completionTokens })
@@ -407,6 +605,7 @@ export async function extractDocument(
   return {
     chunksTotal: chunks.length,
     chunksProcessed: processed,
+    chunksResumed: resumed,
     chunksFailed: failed,
     claimsExtracted: extracted,
     claimsAccepted: accepted,
@@ -414,6 +613,8 @@ export async function extractDocument(
     claimsRejected: rejected,
     promptTokens,
     completionTokens,
+    spentPromptTokens,
+    spentCompletionTokens,
     stoppedEarly,
   };
 }

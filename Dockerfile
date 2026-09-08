@@ -9,7 +9,7 @@
 #
 # Node 24, matching engines.node in package.json.
 
-FROM node:24-slim AS base
+FROM docker.io/library/node:24-slim AS base
 WORKDIR /app
 # Fail fast if the image ever drifts from the version the workspace requires.
 RUN node --version
@@ -85,7 +85,7 @@ COPY apps/web ./apps/web
 RUN npm run build --workspace @superjoin/web
 
 # Static files behind nginx, which also proxies the API so the browser sees one origin.
-FROM nginx:1.29-alpine AS web
+FROM docker.io/library/nginx:1.29-alpine AS web
 COPY --from=web-build /app/apps/web/dist /usr/share/nginx/html
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

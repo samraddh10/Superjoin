@@ -18,3 +18,4 @@ export * from './claims.ts';
 export * from './relationships.ts';
 export * from './issues.ts';
 export * from './settings.ts';
+export * from './checkpoints.ts';

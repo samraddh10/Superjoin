@@ -10,7 +10,7 @@ services:
   postgres:
     # pgvector is required by plan section 6.1 for candidate retrieval. Taking the
     # extension as part of the image avoids a build step in the migration path.
-    image: pgvector/pgvector:pg17
+    image: docker.io/pgvector/pgvector:pg17
     environment:
       POSTGRES_USER: superjoin
       POSTGRES_PASSWORD: superjoin
@@ -96,9 +96,10 @@ services:
     environment:
       DATABASE_URL: postgres://superjoin:superjoin@postgres:5432/superjoin
       STORAGE_DIR: /data/storage
-      # The only service given model access, and the region is what grants it: no live
-      # Bedrock call can be made without one, so withholding it from the api is what keeps
-      # that service in saved-output mode. Absent here means saved-output too.
+      # The only service given model access, and the region is what grants it: no Bedrock
+      # call can be made without one. Withholding it from the api is what keeps that
+      # service free of model credentials. The worker will not start without a provider —
+      # this one or Groq — because there is no offline mode to fall back to.
       AWS_REGION: ${AWS_REGION:-}
       # A Bedrock long-term API key, which is what the console's "API key" button issues.
       # A bearer token rather than an access-key pair, and it wins over one when both are

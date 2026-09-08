@@ -256,6 +256,7 @@ export async function persistTranscription(
 export async function pagesNeedingTranscription(
   db: Database,
   documentId: string,
+  producedBy?: string,
 ): Promise<number[]> {
   const rows = await db
     .selectDistinct({ physicalPage: sourceBlocks.physicalPage })
@@ -269,5 +270,32 @@ export async function pagesNeedingTranscription(
     )
     .orderBy(sourceBlocks.physicalPage);
 
-  return rows.map((row) => row.physicalPage);
+  const candidates = rows.map((row) => row.physicalPage);
+  if (producedBy === undefined) return candidates;
+
+  /**
+   * Pages this model has already transcribed under this prompt.
+   *
+   * The native table blocks stay on the page after a transcription — `verifyClaim` needs
+   * them as the independent witness — so their presence cannot mean the page is still
+   * owed a reading. Without this a retry re-transcribed every page it had already done,
+   * which on a rate-limited tier is not merely wasteful: the run spends its whole quota
+   * redoing settled pages and fails again at the same place, one page further on at best.
+   *
+   * Keyed on `producedBy`, which carries the model and the prompt version, so a changed
+   * model or prompt reads the page again rather than inheriting an older reading.
+   */
+  const done = await db
+    .selectDistinct({ physicalPage: sourceBlocks.physicalPage })
+    .from(sourceBlocks)
+    .where(
+      and(
+        eq(sourceBlocks.documentId, documentId),
+        eq(sourceBlocks.extractionMethod, 'model_transcription'),
+        eq(sourceBlocks.producedBy, producedBy),
+      ),
+    );
+
+  const transcribed = new Set(done.map((row) => row.physicalPage));
+  return candidates.filter((page) => !transcribed.has(page));
 }

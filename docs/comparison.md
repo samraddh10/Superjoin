@@ -53,11 +53,23 @@ Two downgrades are applied in code rather than trusted to the prompt. A `corrobo
 
 ## When the classifier cannot be reached
 
-Throttled, out of budget, or no key at all: the pair falls back to the deterministic answer, the row records `deterministic` as its method, and the reason is stored as uncertainty.
+The run fails. A pair reaches the model only because the deterministic checks could not settle it, so a label written in the model's absence would be a guess stored in the same shape as a considered answer, and no reader could tell the two apart afterwards.
 
-The deterministic label is deliberately impoverished. It can return `unrelated` when the names have nothing in common or a rule keeps the measures apart, and `corroborates` for two independent accepted claims whose contexts match exactly and whose figures agree after a recorded conversion. Everything else is `insufficient_context`.
+Throttling and timeouts are raised as transient and the queue retries them with backoff; a refused or missing key is permanent and stops at once. The failure is recorded against the run with the pair it died on.
 
-It can never return `contradicts` or `likely_contradiction`. Arithmetic is not proof of conflict, and every apparent conflict in the working collection turns on a definition or a basis that arithmetic cannot read. Abstention that is visibly abstention is the point.
+## What the deterministic checks decide on their own
+
+Before any model call, a pair can be settled by the checks alone. The deterministic label is deliberately impoverished: `unrelated` when the names have nothing in common or a rule keeps the measures apart, and `corroborates` under the narrow conditions below. Anything else goes to the model.
+
+A plain corroboration is a pair with no open question: both claims resolved to the same entity, naming the same measure, both accepted, from two documents, resting on no shared source block, both stating a reporting period, agreeing on every stated context dimension, and carrying figures that agree after a recorded conversion. On these the classifier was restating the checks back to us, so they are now settled without a call. The verdict still stores the evidence ids it compared, so a relationship reached this way points at quotes like any other.
+
+Two conditions in that list are stricter than they were before `checks@3`. Identity must be a resolved entity match on both sides, not merely "not different": `unresolved` means the two agree on a name, and two companies can share one. And the context must be *confirmed* rather than merely not contradicted. `checks@2` correctly stopped counting silence as disagreement, but an empty difference list then meant both "the contexts match" and "neither claim said" — so two claims stating no period at all could corroborate each other. `contextConfirmed` requires a period on both sides.
+
+None of this weakens plan 6.2. What 6.2 forbids is arithmetic proving a contradiction or a reconciliation, both of which turn on a definition the numbers cannot read; neither is reachable here, and every disagreement, every differing context and every pair whose identity or period rests on silence still goes to the model.
+
+The shortcut can be turned off (`fastPathCorroborations`), so the same evaluation set can be run with and without it. That is what says whether it agrees with the classifier on the pairs it takes over, rather than assuming it does.
+
+It can never return `contradicts` or `likely_contradiction`. Arithmetic is not proof of conflict, and every apparent conflict in the working collection turns on a definition or a basis that arithmetic cannot read.
 
 ## Audit trail
 
@@ -65,11 +77,13 @@ Each relationship stores both claim ids, the label, the rationale, the differing
 
 Both claims stay untouched. Nothing resolves a disagreement into a third value that neither document states, and no confidence score is stored anywhere.
 
-A unique index on (claim A, claim B, method version) makes a re-run collide instead of duplicating. A row is upgraded from `deterministic` to `model` when a later run reaches the classifier; the reverse never happens, so a throttled retry cannot erase a considered label.
+Pairs an earlier attempt already put to the classifier, under the same method version, are not asked again: the stored `model` verdict is the answer, and the stage looks them up before the loop rather than discovering them at insert time, after the call that reproduced them had been paid for. Only `model` rows count as answered — a `deterministic` row is the abstention written when the classifier could not be reached, and it is meant to be replaced.
+
+A unique index on (claim A, claim B, method version) makes a re-run collide instead of duplicating. A row is upgraded from `deterministic` to `model` when a later run reaches the classifier; the reverse never happens, so a retry cannot erase a considered label.
 
 ## Limitations
 
 - Same-document pairs are never retrieved, so an internal inconsistency within one filing is invisible to this stage.
 - Candidate loading reads every comparable claim in the collection into memory for the exact channel. That is right for three documents and is the first thing to change as a corpus grows (plan 9.5).
 - A `reconciled_by_context` depends on the explaining passage being inside the evidence already attached to one of the two claims. A definition three pages away will not be seen.
-- The deterministic fallback's `corroborates` requires an exact context match, so a run with no model access reports far fewer corroborations than one with it, and the difference is a property of availability rather than of the documents.
+- The deterministic `corroborates` requires a confirmed context match, so the pairs settled before any model call are only the unambiguous ones; everything else depends on the classifier being reachable, and a run that cannot reach it produces no relationships at all rather than weaker ones.

@@ -1,31 +1,31 @@
 import { describe, expect, it } from 'vitest';
 
-import { ConfigError, loadConfig } from './load.ts';
+import { ConfigError, loadConfig, requireModelAccess } from './load.ts';
 
 describe('loadConfig', () => {
-  it('falls back to saved-output mode when no region is set', () => {
+  it('loads without a provider, so a service that never calls the model can start', () => {
+    // The API is that service: it holds no model credential by design, and it reaches
+    // this same loader through createDatabase.
     const config = loadConfig({});
-    expect(config.modelMode).toBe('saved-output');
     expect(config.awsRegion).toBeUndefined();
+    expect(config.groqApiKey).toBeUndefined();
   });
 
-  it('reports live mode when a region is present', () => {
-    const config = loadConfig({ AWS_REGION: 'us-east-1' });
-    expect(config.modelMode).toBe('live');
-    expect(config.awsRegion).toBe('us-east-1');
+  it('reads a region that is present', () => {
+    expect(loadConfig({ AWS_REGION: 'us-east-1' }).awsRegion).toBe('us-east-1');
   });
 
   /**
-   * Credentials do not decide the mode; the region does.
+   * Credentials do not decide whether Bedrock is available; the region does.
    *
    * Bedrock credentials legitimately arrive from a task role or SSO profile rather than
-   * the environment, so requiring an access key here would report saved-output on exactly
-   * the deployment the plan prefers. A region cannot be inferred and no live call can be
-   * made without one, which is what makes it the honest signal.
+   * the environment, so requiring an access key here would refuse exactly the deployment
+   * the plan prefers. A region cannot be inferred and no call can be made without one,
+   * which is what makes it the honest signal.
    */
-  it('reports live mode from a region alone, with credentials left to the SDK chain', () => {
+  it('accepts a region alone, with credentials left to the SDK chain', () => {
     const config = loadConfig({ AWS_REGION: 'ap-south-1' });
-    expect(config.modelMode).toBe('live');
+    expect(config.awsRegion).toBe('ap-south-1');
     expect(config.awsAccessKeyId).toBeUndefined();
     expect(config.awsSecretAccessKey).toBeUndefined();
   });
@@ -39,12 +39,13 @@ describe('loadConfig', () => {
 
   /**
    * Compose substitutes the empty string for an unset `${AWS_REGION:-}`, so a blank has
-   * to select saved-output rather than fail validation. Rejecting it stopped the worker
-   * from booting at all, which is the opposite of the fallback the blank was for.
+   * to read as an absent provider rather than fail validation here. The refusal belongs
+   * to `requireModelAccess`, which names what is missing; a schema rejection would only
+   * say the variable was invalid.
    */
-  it('reads a blank region as saved-output instead of refusing to start', () => {
-    expect(loadConfig({ AWS_REGION: '' }).modelMode).toBe('saved-output');
-    expect(loadConfig({ AWS_REGION: '   ' }).modelMode).toBe('saved-output');
+  it('reads a blank region as an absent provider rather than refusing to parse', () => {
+    expect(loadConfig({ AWS_REGION: '' }).awsRegion).toBeUndefined();
+    expect(loadConfig({ AWS_REGION: '   ' }).awsRegion).toBeUndefined();
   });
 
   it('carries explicit credentials through when they are given', () => {
@@ -99,7 +100,26 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ EMBEDDING_DIMENSIONS: 'wide' })).toThrow(ConfigError);
   });
 
+
   it('names the offending variable when the environment is invalid', () => {
     expect(() => loadConfig({ MAX_PDF_PAGES: '-1' })).toThrow(/MAX_PDF_PAGES/);
+  });
+});
+
+describe('requireModelAccess', () => {
+  it('refuses to start when neither provider is configured', () => {
+    // There is no offline mode behind this: the caller is about to reach a provider on
+    // every document, and it must not be told to proceed without one.
+    expect(() => requireModelAccess(loadConfig({}))).toThrow(ConfigError);
+    expect(() => requireModelAccess(loadConfig({ AWS_REGION: '  ' }))).toThrow(
+      /no model provider is configured/,
+    );
+  });
+
+  it('accepts either provider on its own', () => {
+    // Which one a run uses is a runtime setting, so one configured provider is enough to
+    // start; demanding both would refuse a machine that is set up to use the one it has.
+    expect(() => requireModelAccess(loadConfig({ AWS_REGION: 'us-east-1' }))).not.toThrow();
+    expect(() => requireModelAccess(loadConfig({ GROQ_API_KEY: 'gsk-test' }))).not.toThrow();
   });
 });

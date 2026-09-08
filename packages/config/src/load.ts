@@ -1,15 +1,5 @@
 import { z } from 'zod';
 
-/**
- * How the system obtains model responses.
- *
- * `live` calls Bedrock. `saved-output` replays stored responses so the system can be
- * evaluated without an API key, which plan section 11.1 asks for. Derived from whether a
- * key is present rather than set independently, so the two cannot disagree, and surfaced
- * to the interface so saved output is always labelled as such.
- */
-export type ModelMode = 'live' | 'saved-output';
-
 export class ConfigError extends Error {
   override readonly name = 'ConfigError';
 }
@@ -41,9 +31,13 @@ const nonEmpty = (fallback: string) =>
  * An absent value and one set to the empty string mean the same thing.
  *
  * The empty string is the state a `.env` copied from `.env.example` is actually in, and
- * it is also what Compose substitutes for an unset variable written `${VAR:-}` — so a
- * schema that rejects blanks refuses to start the worker rather than falling back to
- * saved-output, which is what the blank was meant to select.
+ * it is also what Compose substitutes for an unset variable written `${VAR:-}`. Both
+ * resolve to `undefined` so that one check covers them, and so that a blank reads as an
+ * absent provider rather than as a credential that will fail opaquely at the first call.
+ *
+ * Provider access is demanded where it is used rather than by this schema: the API
+ * reaches `loadConfig` and holds no model credential by design, so rejecting here would
+ * stop a service that never calls a model. See `requireModelAccess`.
  */
 const optionalValue = z
   .string()
@@ -59,14 +53,12 @@ const schema = z.object({
   PORT: intInRange(1, 65535, 3000),
 
   /**
-   * The switch between live inference and replayed output.
+   * The region Bedrock is called in.
    *
-   * A region is not a redundant flag: Bedrock is regional, model access is granted per
-   * region, and no live call can be made without one. Deriving the mode from it keeps the
-   * property the previous key-based rule had — a service that was not given model access
-   * cannot claim to have used it — while still allowing credentials to arrive from a task
-   * role or SSO profile rather than the environment. Compose gives this to the worker and
-   * withholds it from the API.
+   * Not a redundant flag: Bedrock is regional, model access is granted per region, and no
+   * call can be made without one. Its presence is what makes Bedrock available, while
+   * still allowing credentials to arrive from a task role or SSO profile rather than the
+   * environment. Compose gives this to the worker and withholds it from the API.
    */
   AWS_REGION: optionalValue,
 
@@ -93,9 +85,6 @@ const schema = z.object({
   /**
    * Model id or inference profile ARN. Recorded on every run: Bedrock versions its model
    * ids, and two runs of `:0` and `:1` are not the same experiment.
-   *
-   * Kept even when no region is set, because the saved-output client fingerprints
-   * requests by model name and a replay has to key against what recorded it.
    */
   BEDROCK_MODEL_ID: nonEmpty('moonshotai.kimi-k2.5'),
 
@@ -110,7 +99,16 @@ const schema = z.object({
    */
   GROQ_API_KEY: optionalValue,
   GROQ_BASE_URL: nonEmpty('https://api.groq.com/openai/v1'),
-  GROQ_MODEL: nonEmpty('openai/gpt-oss-120b'),
+  /**
+   * Must be a multimodal model.
+   *
+   * One client serves every stage, and the visual route hands it a rendered page. A
+   * text-only model — `openai/gpt-oss-120b`, which this defaulted to — rejects the image
+   * part outright with `content must be a string`, and since a page that cannot be
+   * transcribed fails its run, the default made every document fail on its first
+   * difficult page.
+   */
+  GROQ_MODEL: nonEmpty('qwen/qwen3.8-27b'),
 
   /**
    * Embeddings run locally. Bedrock does serve embedding models, but moving them there
@@ -128,6 +126,21 @@ const schema = z.object({
   LLM_CONCURRENCY: intInRange(1, 32, 2),
   CANDIDATE_TOP_K: intInRange(1, 200, 15),
 
+  /**
+   * How much extraction may pack into one request.
+   *
+   * Chunking flushes at every heading and page, which citations depend on and which leaves
+   * a tail of very small chunks. Each one paid the full fixed cost of a request to ask
+   * about a few dozen words. These bound how many of them travel together: the token
+   * ceiling is well under any model's limit, because the point is the saving rather than
+   * the capacity, and a batch large enough for the model to lose track of a passage has
+   * spent that saving on a worse answer.
+   *
+   * A chunk ceiling of 1 restores one request per chunk.
+   */
+  EXTRACTION_BATCH_TOKENS: intInRange(0, 100_000, 3000),
+  EXTRACTION_BATCH_CHUNKS: intInRange(1, 20, 4),
+
   // The plan asks for a per-document token budget, an application timeout and a
   // provider retry limit without proposing values. These are starting points to tune
   // once Phase 8 has measured token use and latency.
@@ -141,7 +154,6 @@ export interface Config {
   readonly storageDir: string;
   readonly port: number;
 
-  readonly modelMode: ModelMode;
   readonly awsRegion: string | undefined;
   readonly awsBearerToken: string | undefined;
   readonly awsAccessKeyId: string | undefined;
@@ -161,6 +173,11 @@ export interface Config {
   readonly llmConcurrency: number;
   readonly candidateTopK: number;
 
+  /** Input tokens one extraction request may carry across its passages. */
+  readonly extractionBatchTokens: number;
+  /** Passages one extraction request may carry. */
+  readonly extractionBatchChunks: number;
+
   readonly documentTokenBudget: number;
   readonly llmTimeoutMs: number;
   readonly providerMaxRetries: number;
@@ -170,7 +187,7 @@ export interface Config {
  * Resolves configuration from an environment, defaulting to `process.env`.
  *
  * Taking the environment as a parameter keeps this testable without mutating global
- * state, which matters because the saved-output branch has to be exercised directly.
+ * state.
  */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const parsed = schema.safeParse(env);
@@ -189,14 +206,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     storageDir: value.STORAGE_DIR,
     port: value.PORT,
 
-    /**
-     * Live when any provider is reachable, not only Bedrock.
-     *
-     * The mode says whether this process can call a model at all, so tying it to one
-     * provider would report saved-output on a machine that has a working Groq key.
-     */
-    modelMode:
-      value.AWS_REGION === undefined && value.GROQ_API_KEY === undefined ? 'saved-output' : 'live',
     awsRegion: value.AWS_REGION,
     awsBearerToken: value.AWS_BEARER_TOKEN_BEDROCK,
     awsAccessKeyId: value.AWS_ACCESS_KEY_ID,
@@ -216,8 +225,30 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     llmConcurrency: value.LLM_CONCURRENCY,
     candidateTopK: value.CANDIDATE_TOP_K,
 
+    extractionBatchTokens: value.EXTRACTION_BATCH_TOKENS,
+    extractionBatchChunks: value.EXTRACTION_BATCH_CHUNKS,
+
     documentTokenBudget: value.DOCUMENT_TOKEN_BUDGET,
     llmTimeoutMs: value.LLM_TIMEOUT_MS,
     providerMaxRetries: value.PROVIDER_MAX_RETRIES,
   };
+}
+
+/**
+ * A refusal to continue without a provider to call.
+ *
+ * Called by the process that actually reaches a provider, at startup rather than at the
+ * first completion: a worker that begins consuming jobs and only then discovers it has no
+ * credential has already claimed work it cannot do, and every one of those jobs pays a
+ * full retry ladder to learn the same thing.
+ *
+ * Either provider satisfies it. Which one a run uses is a runtime setting, so demanding
+ * both here would refuse to start a machine that is configured to use the one it has.
+ */
+export function requireModelAccess(config: Config): void {
+  if (config.awsRegion === undefined && config.groqApiKey === undefined) {
+    throw new ConfigError(
+      'no model provider is configured: set AWS_REGION for Bedrock or GROQ_API_KEY for Groq. This service calls a model on every document, and there is no offline mode to fall back to',
+    );
+  }
 }
