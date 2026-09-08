@@ -117,6 +117,21 @@ const schema = z.object({
   LLM_CONCURRENCY: intInRange(1, 32, 2),
   CANDIDATE_TOP_K: intInRange(1, 200, 15),
 
+  /**
+   * How much extraction may pack into one request.
+   *
+   * Chunking flushes at every heading and page, which citations depend on and which leaves
+   * a tail of very small chunks. Each one paid the full fixed cost of a request to ask
+   * about a few dozen words. These bound how many of them travel together: the token
+   * ceiling is well under any model's limit, because the point is the saving rather than
+   * the capacity, and a batch large enough for the model to lose track of a passage has
+   * spent that saving on a worse answer.
+   *
+   * A chunk ceiling of 1 restores one request per chunk.
+   */
+  EXTRACTION_BATCH_TOKENS: intInRange(0, 100_000, 3000),
+  EXTRACTION_BATCH_CHUNKS: intInRange(1, 20, 4),
+
   // The plan asks for a per-document token budget, an application timeout and a
   // provider retry limit without proposing values. These are starting points to tune
   // once Phase 8 has measured token use and latency.
@@ -148,6 +163,11 @@ export interface Config {
 
   readonly llmConcurrency: number;
   readonly candidateTopK: number;
+
+  /** Input tokens one extraction request may carry across its passages. */
+  readonly extractionBatchTokens: number;
+  /** Passages one extraction request may carry. */
+  readonly extractionBatchChunks: number;
 
   readonly documentTokenBudget: number;
   readonly llmTimeoutMs: number;
@@ -195,6 +215,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
 
     llmConcurrency: value.LLM_CONCURRENCY,
     candidateTopK: value.CANDIDATE_TOP_K,
+
+    extractionBatchTokens: value.EXTRACTION_BATCH_TOKENS,
+    extractionBatchChunks: value.EXTRACTION_BATCH_CHUNKS,
 
     documentTokenBudget: value.DOCUMENT_TOKEN_BUDGET,
     llmTimeoutMs: value.LLM_TIMEOUT_MS,

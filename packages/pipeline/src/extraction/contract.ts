@@ -24,7 +24,7 @@
 import { z } from 'zod';
 
 /** Bumped whenever the prompt or this schema changes what the model returns. */
-export const EXTRACTION_PROMPT_VERSION = 'claim-extract@2';
+export const EXTRACTION_PROMPT_VERSION = 'claim-extract@3';
 
 /**
  * How a claim's period is expressed.

@@ -148,6 +148,8 @@ const STAGES: readonly StageHandler[] = [
     client: modelClient,
     tokenBudget: config.documentTokenBudget,
     concurrency: config.llmConcurrency,
+    batchInputTokens: config.extractionBatchTokens,
+    batchMaxChunks: config.extractionBatchChunks,
   }),
   createNormalizationStage({ client: modelClient }),
   createComparisonStage({

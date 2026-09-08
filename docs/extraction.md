@@ -71,6 +71,18 @@ The fingerprint identifies the assertion, not the sentence: subject, predicate, 
 
 A unique index on (document, fingerprint) makes a retried job collide rather than duplicate. Evidence accumulates against whichever row won.
 
+## Several passages in one request
+
+Chunking flushes at every heading and every page. Both boundaries are load-bearing — a table has to stay attached to the section that names it, and a claim's page has to be unambiguous — so neither moves. What they produce, though, is a long tail of very small chunks: a heading with two sentences under it, the last rows of a table on a page of its own. Each one paid the full fixed cost of a request — system prompt, rules, the collection's entire predicate vocabulary, schema — to ask about a few dozen words.
+
+Small chunks now travel together, up to `EXTRACTION_BATCH_TOKENS` of input and `EXTRACTION_BATCH_CHUNKS` passages. Each passage keeps its own page and section header and is stated to be separate from the others. Batches are packed in reading order rather than bin-packed, so a batch usually reads as a continuation of one section; an oversized chunk travels alone rather than being refused.
+
+Handles are the part that has to be exactly right. They are numbered per chunk, so two passages in one request would each offer a `B1` standing for a different block. Every handle in a multi-passage request is therefore rewritten to carry its passage — `P2B1` — and the lookup is built over the whole batch. Claims come back as one list and are attributed to a chunk by the block each cites, never by what the model says about which passage it read, so a model that confuses two passages still produces a claim grounded in the block it actually quoted. A claim whose citations resolve to nothing is a rejection either way, and it leaves the whole batch unrecorded rather than crediting a chunk that may not have produced it.
+
+A request carrying one passage is asked exactly what a single chunk was always asked, word for word. `EXTRACTION_BATCH_CHUNKS=1` restores one request per chunk, which is what the measurement of the saving has to be taken against.
+
+The reply allowance grows with the batch but not in proportion: 4,000 tokens for one passage and 2,000 for each after it, capped at 8,000. The chunks that pack are the small ones, and a ceiling generous enough for the worst case would let a single runaway reply spend the document's budget.
+
 ## Resuming a retried job
 
 A retry re-enters this stage from the beginning, because the stage has no memory of which chunks the previous attempt reached. Deduplication made that safe but not cheap: every chunk was asked again, at full price, to arrive back at claims the unique index refuses to duplicate, so a document cost its length multiplied by its attempts.
@@ -85,12 +97,14 @@ The per-document token budget is measured against what the current attempt spent
 
 ## Failure handling
 
-A chunk that fails costs that chunk. The document keeps every other chunk's claims, the failure is recorded against the run, and the run ends `completed_with_issues`. The stage stops early after four consecutive failures or when the per-document token budget is spent, and records why with a count of the chunks it did not attempt.
+A batch that fails costs its passages. They shared one request and there is no way to tell which of them the model choked on, nor is it usually one of them. The document keeps every other chunk's claims, the failure is recorded against the run, and the run ends `completed_with_issues`. The stage stops early after four consecutive failures or when the per-document token budget is spent, and records why with a count of the chunks it did not attempt.
 
 ## Limitations
 
 - Entailment is a presence check, not logical entailment. A passage can contain the figure and still be about something else. Relationship classification re-reads the evidence rather than trusting the claim.
 - A claim whose value appears nowhere in its own quote is rejected even if the quote is the right passage and the extractor merely quoted the row header. This trades recall for the guarantee that an accepted claim's quote contains its figure.
 - Resumption is per chunk, so a document whose parse changed loses the whole cache at once: every fingerprint moves together.
+- A batch fails as a unit, so one unreadable reply costs every passage in it. Bounding the batch is what keeps that cost small, and it is why the ceilings are well under what a model would accept.
+- Tokens are recorded per chunk by apportioning the request they shared, weighted by each passage's size. The totals are exact; the per-chunk figures are an apportionment and should not be read as a measurement of one chunk's cost.
 - Chunk-level extraction cannot see a footnote on another page. Evidence spanning pages is not currently reachable.
 - Table cells are validated through the transcription text that carries the row header and unit alongside the value, not against the `table_headers` column directly. A quote that spans the header and the figure therefore validates both, and one that quotes the figure alone does not check its header at all. Wiring the stored cell address into verification is the next step here.

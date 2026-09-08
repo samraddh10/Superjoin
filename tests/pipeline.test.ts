@@ -137,49 +137,79 @@ const classification = JSON.stringify({
 });
 
 let collectionId: string;
-let deck: { documentId: string; runId: string };
-let report: { documentId: string; runId: string };
+let deck: Seeded;
+let report: Seeded;
+/** Extra collections a test made, torn down with the main one. */
+const spentCollections: string[] = [];
 
-async function seedDocument(
+type Seeded = { documentId: string; runId: string; collectionId: string };
+
+async function seedDocument(filename: string, blockText: string): Promise<Seeded> {
+  return seedPages(filename, [blockText]);
+}
+
+/**
+ * Seeds one document with one block per physical page.
+ *
+ * A chunk never spans a page, so a block per page is the shortest way to a document that
+ * chunks into more than one piece — which is what batching needs in order to be visible
+ * at all.
+ */
+async function seedPages(
   filename: string,
-  blockText: string,
-): Promise<{ documentId: string; runId: string }> {
+  pages: readonly string[],
+  into?: string,
+): Promise<Seeded> {
+  const collection = into ?? collectionId;
   const [document] = await database.db
     .insert(documents)
     .values({
-      collectionId,
+      collectionId: collection,
       filename,
       contentHash: randomUUID().replace(/-/g, '').padEnd(64, '0').slice(0, 64),
       storageKey: `documents/${filename}`,
       byteSize: 1024,
-      pageCount: 1,
+      pageCount: pages.length,
     })
     .returning({ id: documents.id });
 
-  await database.db.insert(sourceBlocks).values({
-    documentId: document!.id,
-    physicalPage: 5,
-    printedPageLabel: null,
-    blockType: 'paragraph',
-    extractionMethod: 'native_text',
-    blockIndex: 0,
-    content: blockText,
-    producedBy: 'test-parser@1',
-  });
+  await database.db.insert(sourceBlocks).values(
+    pages.map((content, page) => ({
+      documentId: document!.id,
+      physicalPage: 5 + page,
+      printedPageLabel: null,
+      blockType: 'paragraph' as const,
+      extractionMethod: 'native_text' as const,
+      blockIndex: 0,
+      content,
+      producedBy: 'test-parser@1',
+    })),
+  );
 
   const [run] = await database.db
     .insert(processingRuns)
     .values({ documentId: document!.id, stage: 'extracting', pipelineVersion: 'test-0' })
     .returning({ id: processingRuns.id });
 
-  return { documentId: document!.id, runId: run!.id };
+  return { documentId: document!.id, runId: run!.id, collectionId: collection };
 }
 
-function contextFor(seeded: { documentId: string; runId: string }): ProcessingContext {
+/** A collection of its own, for a document that must not join the comparison fixtures. */
+async function seedCollection(): Promise<string> {
+  const [collection] = await database.db
+    .insert(collections)
+    .values({ name: `pipeline-${randomUUID()}` })
+    .returning({ id: collections.id });
+
+  spentCollections.push(collection!.id);
+  return collection!.id;
+}
+
+function contextFor(seeded: Seeded): ProcessingContext {
   return {
     database,
     storageDir: '/tmp',
-    job: { runId: seeded.runId, documentId: seeded.documentId, collectionId },
+    job: { runId: seeded.runId, documentId: seeded.documentId, collectionId: seeded.collectionId },
     storageKey: 'unused',
     pageCount: 1,
   };
@@ -203,6 +233,9 @@ afterAll(async () => {
   // The collection cascades to documents, blocks, claims and relationships, so one
   // delete leaves the database as the test found it.
   await database.db.delete(collections).where(eq(collections.id, collectionId));
+  for (const spent of spentCollections) {
+    await database.db.delete(collections).where(eq(collections.id, spent));
+  }
   await closeDatabase(database);
 });
 
@@ -252,6 +285,100 @@ describe.skipIf(!reachable)('extraction, normalization and comparison', () => {
       .where(eq(claims.documentId, deck.documentId));
 
     expect(stored).toHaveLength(1);
+  }, 60_000);
+
+  it('reads two chunks in one request and grounds each in its own block', async () => {
+    // Chunking flushes at every page, so a two-page document is two chunks. They used to
+    // be two requests, each resending the system prompt, the rules and the collection's
+    // whole vocabulary to ask about one sentence.
+    const pages = [
+      'Revenue from services was 8,142 Cr in FY24.',
+      'Adjusted EBITDA was 1,229 million in FY24.',
+    ];
+    // Its own collection: these claims are not part of the cross-document pair the
+    // comparison tests below are built around, and letting them join it would change
+    // what those tests are measuring.
+    const batched = await seedPages('batched.pdf', pages, await seedCollection());
+
+    const client = new ScriptedClient([
+      [
+        'passage P2',
+        JSON.stringify({
+          claims: [
+            {
+              subject: 'Delhivery Limited',
+              predicate: 'revenue_from_services',
+              original_statement: pages[0],
+              raw_value: '8,142 Cr',
+              numeric_value: '8142',
+              currency: 'INR',
+              scale: 'crore',
+              unit: null,
+              period_label: 'FY2024',
+              period_type: 'fiscal_year',
+              scope: null,
+              assertion_status: 'reported',
+              qualifiers: [],
+              evidence_block_ids: ['P1B1'],
+              quote: pages[0],
+            },
+            {
+              subject: 'Delhivery Limited',
+              predicate: 'adjusted_ebitda',
+              original_statement: pages[1],
+              raw_value: '1,229 million',
+              numeric_value: '1229',
+              currency: 'INR',
+              scale: 'million',
+              unit: null,
+              period_label: 'FY2024',
+              period_type: 'fiscal_year',
+              scope: null,
+              assertion_status: 'reported',
+              qualifiers: [],
+              evidence_block_ids: ['P2B1'],
+              quote: pages[1],
+            },
+          ],
+        }),
+      ],
+    ]);
+
+    const summary = await extractDocument(contextFor(batched), { client, concurrency: 1 });
+
+    // Two chunks, one call. That is the whole of the saving.
+    expect(client.calls).toHaveLength(1);
+    expect(summary.chunksTotal).toBe(2);
+    expect(summary.chunksProcessed).toBe(2);
+    expect(summary.claimsAccepted).toBe(2);
+
+    // And each claim is anchored to the page it was actually read from, which is what the
+    // batch-unique handles are for: both chunks call their own block B1.
+    const stored = await database.db
+      .select({ predicate: claims.predicate, page: sourceBlocks.physicalPage })
+      .from(claims)
+      .innerJoin(claimEvidence, eq(claimEvidence.claimId, claims.id))
+      .innerJoin(sourceBlocks, eq(sourceBlocks.id, claimEvidence.sourceBlockId))
+      .where(eq(claims.documentId, batched.documentId));
+
+    expect(stored).toHaveLength(2);
+    expect(stored.find((row) => row.predicate === 'revenue_from_services')?.page).toBe(5);
+    expect(stored.find((row) => row.predicate === 'adjusted_ebitda')?.page).toBe(6);
+  }, 60_000);
+
+  it('sends one chunk per request when batching is turned off', async () => {
+    // The switch that makes the saving measurable against what it replaced.
+    const pages = ['Revenue was 1 Cr in FY24.', 'Revenue was 2 Cr in FY23.'];
+    const unbatched = await seedPages('unbatched.pdf', pages, await seedCollection());
+    const client = new ScriptedClient([]);
+
+    await extractDocument(contextFor(unbatched), {
+      client,
+      concurrency: 1,
+      batchMaxChunks: 1,
+    });
+
+    expect(client.calls).toHaveLength(2);
   }, 60_000);
 
   it('rejects a claim that cites a block it was never shown', async () => {
