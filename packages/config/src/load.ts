@@ -99,7 +99,16 @@ const schema = z.object({
    */
   GROQ_API_KEY: optionalValue,
   GROQ_BASE_URL: nonEmpty('https://api.groq.com/openai/v1'),
-  GROQ_MODEL: nonEmpty('openai/gpt-oss-120b'),
+  /**
+   * Must be a multimodal model.
+   *
+   * One client serves every stage, and the visual route hands it a rendered page. A
+   * text-only model — `openai/gpt-oss-120b`, which this defaulted to — rejects the image
+   * part outright with `content must be a string`, and since a page that cannot be
+   * transcribed fails its run, the default made every document fail on its first
+   * difficult page.
+   */
+  GROQ_MODEL: nonEmpty('qwen/qwen3.8-27b'),
 
   /**
    * Embeddings run locally. Bedrock does serve embedding models, but moving them there
