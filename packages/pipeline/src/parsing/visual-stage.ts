@@ -58,7 +58,15 @@ export async function transcribeDocument(
   const { db } = context.database;
   const maxPages = options.maxPages ?? DEFAULTS.maxPages;
 
-  const candidates = await pagesNeedingTranscription(db as Database, context.job.documentId);
+  // Resolved before the candidates, because it is part of asking which pages still need
+  // reading: a page already transcribed by this model under this prompt does not.
+  const producedBy = `${options.client.model}/${TRANSCRIPTION_PROMPT_VERSION}`;
+
+  const candidates = await pagesNeedingTranscription(
+    db as Database,
+    context.job.documentId,
+    producedBy,
+  );
   const selected = candidates.slice(0, maxPages);
 
   if (selected.length === 0) {
@@ -72,7 +80,6 @@ export async function transcribeDocument(
 
   const bytes = await readObject(context.storageDir, context.storageKey);
   const documentHash = await options.documentHash(context);
-  const producedBy = `${options.client.model}/${TRANSCRIPTION_PROMPT_VERSION}`;
 
   let transcribed = 0;
   let failed = 0;

@@ -237,11 +237,25 @@ describe.skipIf(!reachable)('when the model answers', () => {
     expect(await objectExists(storageDir, block!.key!)).toBe(true);
   });
 
-  it('does not transcribe the same page twice under one model version', async () => {
-    const before = await database.db
-      .select()
-      .from(sourceBlocks)
-      .where(eq(sourceBlocks.extractionMethod, 'model_transcription'));
+  it('does not transcribe a page it has already read under this model version', async () => {
+    // Scoped to this document, for the reason the test above gives: any database that has
+    // processed something real holds other documents' transcription blocks, and counting
+    // them all measures whatever else has run rather than what this test did.
+    const transcribedPages = async (): Promise<Set<number>> => {
+      const rows = await database.db
+        .selectDistinct({ page: sourceBlocks.physicalPage })
+        .from(sourceBlocks)
+        .where(
+          and(
+            eq(sourceBlocks.extractionMethod, 'model_transcription'),
+            eq(sourceBlocks.documentId, context.job.documentId),
+          ),
+        );
+      return new Set(rows.map((row) => row.page));
+    };
+
+    const before = await transcribedPages();
+    expect(before.size).toBeGreaterThan(0);
 
     const summary = await transcribeDocument(context, {
       client: answers,
@@ -249,14 +263,26 @@ describe.skipIf(!reachable)('when the model answers', () => {
       maxPages: 2,
     });
 
-    const after = await database.db
-      .select()
-      .from(sourceBlocks)
-      .where(eq(sourceBlocks.extractionMethod, 'model_transcription'));
+    const after = await transcribedPages();
 
-    // Caching by model and prompt version, as plan 3.1 asks.
-    expect(after.length).toBe(before.length);
-    expect(summary.blocksWritten).toBe(0);
+    /**
+     * The cache is at the call, not at the write.
+     *
+     * The unique index always made a second insert a no-op, so a re-read could never
+     * duplicate a block — but the transcription that produced the row it collided with had
+     * already been paid for, and the page was read again to learn nothing. On a
+     * rate-limited tier that is the difference between a document finishing and a retry
+     * spending its whole quota on pages it had already done.
+     *
+     * So a second pass reads only what the first did not, and moves the document forward
+     * rather than back over itself.
+     */
+    // Nothing already read was dropped, and every page this pass read is one the first
+    // pass had not: the two sets are disjoint, and the document moved forward by exactly
+    // what was transcribed.
+    expect([...before].filter((page) => !after.has(page))).toEqual([]);
+    expect(summary.pagesTranscribed).toBe(after.size - before.size);
+    expect(summary.pagesTranscribed).toBeGreaterThan(0);
   }, 180_000);
 });
 
