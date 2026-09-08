@@ -19,6 +19,7 @@ import { createCollection, listCollections } from './api.ts';
 import { DocumentsView } from './DocumentsView.tsx';
 import { FactsView } from './FactsView.tsx';
 import { IssuesView } from './IssuesView.tsx';
+import { ProviderToggle } from './ProviderToggle.tsx';
 import { RelationshipsView } from './RelationshipsView.tsx';
 import { ErrorNotice, Spinner, useAsync } from './ui.tsx';
 
@@ -73,6 +74,8 @@ export function App() {
         </div>
 
         <span className="spacer" />
+
+        <ProviderToggle />
 
         {collections.loading && items.length === 0 ? <Spinner label="loading collections" /> : null}
 

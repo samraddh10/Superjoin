@@ -10,7 +10,15 @@ import { defineConfig } from 'vite';
  * keeps the browser on a single origin, which means no CORS configuration exists to be
  * wrong in development and permissive in production.
  */
-const API_PREFIXES = ['/collections', '/documents', '/facts', '/relationships', '/runs', '/health'];
+const API_PREFIXES = [
+  '/collections',
+  '/documents',
+  '/facts',
+  '/relationships',
+  '/runs',
+  '/settings',
+  '/health',
+];
 
 export default defineConfig({
   plugins: [react()],

@@ -3,29 +3,66 @@ import { describe, expect, it } from 'vitest';
 import { ConfigError, loadConfig } from './load.ts';
 
 describe('loadConfig', () => {
-  it('falls back to saved-output mode when no API key is set', () => {
+  it('falls back to saved-output mode when no region is set', () => {
     const config = loadConfig({});
     expect(config.modelMode).toBe('saved-output');
-    expect(config.openRouterApiKey).toBeUndefined();
+    expect(config.awsRegion).toBeUndefined();
   });
 
-  it('treats a blank API key as absent rather than as a live credential', () => {
-    // A .env copied from .env.example leaves OPENROUTER_API_KEY set to the empty string.
-    // Reading that as live access would fail later with an opaque auth error.
-    expect(loadConfig({ OPENROUTER_API_KEY: '   ' }).modelMode).toBe('saved-output');
-  });
-
-  it('reports live mode when a key is present', () => {
-    const config = loadConfig({ OPENROUTER_API_KEY: 'test-key' });
+  it('reports live mode when a region is present', () => {
+    const config = loadConfig({ AWS_REGION: 'us-east-1' });
     expect(config.modelMode).toBe('live');
-    expect(config.openRouterApiKey).toBe('test-key');
+    expect(config.awsRegion).toBe('us-east-1');
+  });
+
+  /**
+   * Credentials do not decide the mode; the region does.
+   *
+   * Bedrock credentials legitimately arrive from a task role or SSO profile rather than
+   * the environment, so requiring an access key here would report saved-output on exactly
+   * the deployment the plan prefers. A region cannot be inferred and no live call can be
+   * made without one, which is what makes it the honest signal.
+   */
+  it('reports live mode from a region alone, with credentials left to the SDK chain', () => {
+    const config = loadConfig({ AWS_REGION: 'ap-south-1' });
+    expect(config.modelMode).toBe('live');
+    expect(config.awsAccessKeyId).toBeUndefined();
+    expect(config.awsSecretAccessKey).toBeUndefined();
+  });
+
+  it('treats a blank credential as absent rather than as one the SDK should use', () => {
+    // A .env copied from .env.example leaves these set to the empty string, and passing
+    // that to the SDK fails later with an opaque signature error.
+    const config = loadConfig({ AWS_REGION: 'us-east-1', AWS_ACCESS_KEY_ID: '   ' });
+    expect(config.awsAccessKeyId).toBeUndefined();
+  });
+
+  /**
+   * Compose substitutes the empty string for an unset `${AWS_REGION:-}`, so a blank has
+   * to select saved-output rather than fail validation. Rejecting it stopped the worker
+   * from booting at all, which is the opposite of the fallback the blank was for.
+   */
+  it('reads a blank region as saved-output instead of refusing to start', () => {
+    expect(loadConfig({ AWS_REGION: '' }).modelMode).toBe('saved-output');
+    expect(loadConfig({ AWS_REGION: '   ' }).modelMode).toBe('saved-output');
+  });
+
+  it('carries explicit credentials through when they are given', () => {
+    const config = loadConfig({
+      AWS_REGION: 'us-east-1',
+      AWS_ACCESS_KEY_ID: 'AKIAEXAMPLE',
+      AWS_SECRET_ACCESS_KEY: 'secret',
+      AWS_SESSION_TOKEN: 'token',
+    });
+    expect(config.awsAccessKeyId).toBe('AKIAEXAMPLE');
+    expect(config.awsSecretAccessKey).toBe('secret');
+    expect(config.awsSessionToken).toBe('token');
   });
 
   it('applies every default named in plan section 1.3', () => {
     const config = loadConfig({});
-    expect(config.llmModel).toBe('google/gemma-4-26b-a4b-it:free');
+    expect(config.bedrockModelId).toBe('moonshotai.kimi-k2.5');
     expect(config.embeddingModel).toBe('Xenova/all-mpnet-base-v2');
-    expect(config.openRouterBaseUrl).toBe('https://openrouter.ai/api/v1');
     expect(config.embeddingDimensions).toBe(768);
     expect(config.maxUploadMb).toBe(50);
     expect(config.maxPdfPages).toBe(300);
