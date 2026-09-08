@@ -71,6 +71,18 @@ The fingerprint identifies the assertion, not the sentence: subject, predicate, 
 
 A unique index on (document, fingerprint) makes a retried job collide rather than duplicate. Evidence accumulates against whichever row won.
 
+## Resuming a retried job
+
+A retry re-enters this stage from the beginning, because the stage has no memory of which chunks the previous attempt reached. Deduplication made that safe but not cheap: every chunk was asked again, at full price, to arrive back at claims the unique index refuses to duplicate, so a document cost its length multiplied by its attempts.
+
+A chunk that came back and was written now records that it did, in `chunk_extractions`. The next attempt looks the chunk up before it calls and skips the call on a hit, still counting the claims and the tokens that chunk produced so the run's totals stay the cost of reading the document rather than the cost of the attempt that finished it.
+
+The row's identity is everything the answer depended on: the chunk's text, the block each handle resolves to, the vocabulary rendered into the prompt beside it, the prompt version and the model. Change any of them and the fingerprint changes and the chunk is read again. It is deliberately not the chunk index, which a re-parse may renumber.
+
+A chunk whose claims were rejected is not recorded. A rejection is a bad reading — a quote that is not in the block, a citation to material the model was never shown — and freezing it would deny the next pass the chance to do better. A chunk held for review is recorded: review is resolved by evidence found elsewhere, not by asking the same chunk the same question again.
+
+The per-document token budget is measured against what the current attempt spent, not against the document's total. Charging a resumed chunk's tokens again would let a long document exhaust its budget without making a single call.
+
 ## Failure handling
 
 A chunk that fails costs that chunk. The document keeps every other chunk's claims, the failure is recorded against the run, and the run ends `completed_with_issues`. The stage stops early after four consecutive failures or when the per-document token budget is spent, and records why with a count of the chunks it did not attempt.
@@ -79,5 +91,6 @@ A chunk that fails costs that chunk. The document keeps every other chunk's clai
 
 - Entailment is a presence check, not logical entailment. A passage can contain the figure and still be about something else. Relationship classification re-reads the evidence rather than trusting the claim.
 - A claim whose value appears nowhere in its own quote is rejected even if the quote is the right passage and the extractor merely quoted the row header. This trades recall for the guarantee that an accepted claim's quote contains its figure.
+- Resumption is per chunk, so a document whose parse changed loses the whole cache at once: every fingerprint moves together.
 - Chunk-level extraction cannot see a footnote on another page. Evidence spanning pages is not currently reachable.
 - Table cells are validated through the transcription text that carries the row header and unit alongside the value, not against the `table_headers` column directly. A quote that spans the header and the figure therefore validates both, and one that quotes the figure alone does not check its header at all. Wiring the stored cell address into verification is the next step here.
